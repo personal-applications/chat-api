@@ -1,4 +1,5 @@
 import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
+import bcrypt from "bcrypt";
 import { FastifyPluginAsync, errorCodes } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import { PASSWORD_REGEX } from "../../constants";
@@ -37,6 +38,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
         return response.status(StatusCodes.BAD_REQUEST).send(new errorCodes.FST_ERR_VALIDATION("Email is not available."));
       }
 
+      request.body.password = await bcrypt.hash(request.body.password, 10);
       await createUser(fastify.prisma, request.body.email, request.body.password, request.body.firstName, request.body.lastName);
       return response.status(StatusCodes.NO_CONTENT).send();
     }
