@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import { test } from "node:test";
@@ -13,6 +14,83 @@ test("Authentication routes", async (t) => {
   t.beforeEach(() => {
     findUserByEmailStub.reset();
     createUserStub.reset();
+  });
+
+  await t.test("POST /auth/login", async (t) => {
+    await t.test("Should throw validation errors if fields are not provided", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "body must have required property 'email'");
+    });
+
+    await t.test("Should throw an error if not user with email is found", async (t) => {
+      findUserByEmailStub.resolves(null);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: {
+          email: "email@email.com",
+          password: "Password123*",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "Invalid credentials.");
+    });
+
+    await t.test("Should throw an error if password is incorrect", async (t) => {
+      findUserByEmailStub.resolves({
+        id: 1,
+        email: "email@email.com",
+        password: "password",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        firstName: null,
+        lastName: null,
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: {
+          email: "email@email.com",
+          password: "Password123*",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "Invalid credentials.");
+    });
+
+    await t.test("Should log in successfully and return token", async (t) => {
+      findUserByEmailStub.resolves({
+        id: 1,
+        email: "email@email.com",
+        password: await bcrypt.hash("Password123*", 10),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        firstName: null,
+        lastName: null,
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: {
+          email: "email@email.com",
+          password: "Password123*",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.ok(typeof response.json().jwtToken, "string");
+    });
   });
 
   await t.test("POST /auth/register", async (t) => {
@@ -43,7 +121,15 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should throw validation error if email is not available", async (t) => {
-      findUserByEmailStub.resolves({} as any);
+      findUserByEmailStub.resolves({
+        id: 1,
+        email: "email@email.com",
+        password: "Password123*",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        firstName: null,
+        lastName: null,
+      });
 
       const response = await app.inject({
         method: "POST",
@@ -61,8 +147,6 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should create a user successfully", async (t) => {
-      findUserByEmailStub.resolves(null);
-
       const response = await app.inject({
         method: "POST",
         url: "/auth/register",
