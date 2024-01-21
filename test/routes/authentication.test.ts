@@ -1,8 +1,10 @@
 import bcrypt from "bcrypt";
 import { StatusCodes } from "http-status-codes";
+import jwt from "jsonwebtoken";
 import assert from "node:assert";
 import { test } from "node:test";
 import sinon from "sinon";
+import { JWT_EXPIRATION_TIME, JWT_SECRET } from "../../src/config";
 import * as db from "../../src/db";
 import { build } from "../helper";
 
@@ -90,6 +92,37 @@ test("Authentication routes", async (t) => {
 
       assert.equal(response.statusCode, StatusCodes.OK);
       assert.ok(typeof response.json().jwtToken, "string");
+    });
+
+    await t.test("Should create a jwt token with correct payload", async (t) => {
+      findUserByEmailStub.resolves({
+        id: 1,
+        email: "email@email.com",
+        password: await bcrypt.hash("Password123*", 10),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        firstName: null,
+        lastName: null,
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: {
+          email: "email@email.com",
+          password: "Password123*",
+        },
+      });
+
+      const jwtToken = response.json().jwtToken;
+      const payload = jwt.verify(jwtToken, JWT_SECRET) as jwt.JwtPayload;
+
+      // @ts-ignore
+      assert.equal(payload.exp - Math.floor(Date.now() / 1000), JWT_EXPIRATION_TIME);
+      assert.equal(payload.id, 1);
+      assert.equal(payload.email, "email@email.com");
+      assert.equal(payload.firstName, null);
+      assert.equal(payload.lastName, null);
     });
   });
 
