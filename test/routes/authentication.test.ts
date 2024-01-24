@@ -18,6 +18,48 @@ test("Authentication routes", async (t) => {
     createUserStub.reset();
   });
 
+  await t.test("POST /auth/forgot-password", async (t) => {
+    await t.test("Should throw validation errors if fields are not provided", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/forgot-password",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "body must have required property 'email'");
+    });
+
+    await t.test("Should not send an email to users if email is not found", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/forgot-password",
+        payload: {
+          email: "email@email.com",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "body must have required property 'email'");
+    });
+
+    await t.test("Should send an email to users if email is found", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/forgot-password",
+        payload: {
+          email: "email@email.com",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.equal(
+        response.json().message,
+        "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions."
+      );
+    });
+  });
+
   await t.test("POST /auth/login", async (t) => {
     await t.test("Should throw validation errors if fields are not provided", async (t) => {
       const response = await app.inject({

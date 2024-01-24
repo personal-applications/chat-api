@@ -1,12 +1,13 @@
-import createError from "@fastify/error";
 import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import bcrypt from "bcrypt";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
-import { JWT_EXPIRATION_TIME, JWT_SECRET } from "../../config";
+import { JWT_EXPIRATION_TIME, JWT_EXPIRATION_TIME_FORGOT_PASSWORD, JWT_SECRET, JWT_SECRET_FORGOT_PASSWORD } from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
 import { createUser, findUserByEmail } from "../../db";
+import { createServerURL } from "../../helper";
+import { sendMail } from "../mail/mail";
 
 const routes: FastifyPluginAsync = async (fastify) => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -32,16 +33,16 @@ const routes: FastifyPluginAsync = async (fastify) => {
     async (request, response) => {
       const { password, confirmPassword } = request.body;
       if (password !== confirmPassword) {
-        const E = createError("FST_ERR_VALIDATION", "Passwords do not match.", StatusCodes.BAD_REQUEST);
-        return response.send(new E());
+        const error = fastify.httpErrors.badRequest("Passwords do not match.");
+        return response.send(error);
       }
 
       request.body.email = request.body.email.toLowerCase();
       // TODO: We can cache user query from DB
       const user = await findUserByEmail(fastify.prisma, request.body.email);
       if (user) {
-        const E = createError("FST_ERR_VALIDATION", "Email is not available.", StatusCodes.BAD_REQUEST);
-        return response.send(new E());
+        const error = fastify.httpErrors.badRequest("Email is not available.");
+        return response.send(error);
       }
 
       request.body.password = await bcrypt.hash(request.body.password, 10);
@@ -65,17 +66,17 @@ const routes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, response) => {
       // TODO: We can cache user query from DB
-      const E = createError("FST_ERR_BAD_STATUS_CODE", "Invalid credentials.", StatusCodes.BAD_REQUEST);
+      const error = fastify.httpErrors.badRequest("Invalid credentials.");
 
       request.body.email = request.body.email.toLowerCase();
       const user = await findUserByEmail(fastify.prisma, request.body.email);
       if (!user) {
-        return response.send(new E());
+        return response.send(error);
       }
 
       const isPasswordMatched = await bcrypt.compare(request.body.password, user.password);
       if (!isPasswordMatched) {
-        return response.send(new E());
+        return response.send(error);
       }
 
       const jwtToken = jwt.sign(
@@ -104,7 +105,31 @@ const routes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    () => {}
+    async (request, response) => {
+      request.body.email = request.body.email.toLowerCase();
+
+      const user = await findUserByEmail(fastify.prisma, request.body.email);
+      const data = {
+        message: "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions.",
+      };
+      if (!user) {
+        return response.status(StatusCodes.OK).send(data);
+      }
+
+      const token = jwt.sign({ email: user.email }, JWT_SECRET_FORGOT_PASSWORD, {
+        expiresIn: JWT_EXPIRATION_TIME_FORGOT_PASSWORD,
+      });
+      const resetLink = createServerURL(`/auth/reset-password?token=${token}`);
+      await sendMail<"ForgotPassword">({
+        to: request.body.email,
+        template: "ForgotPassword",
+        data: {
+          resetLink,
+        },
+      });
+
+      return response.status(StatusCodes.OK).send(data);
+    }
   );
   server.post(
     "/auth/reset-password",
