@@ -23,7 +23,7 @@ const subjectByTemplate: Record<Template, string> = {
 export async function sendMail<T extends Template>(options: SendEmailOption<T>) {
   const { to, template, data } = options;
 
-  const html = await ejs.renderFile(`modules/mail/templates/${template}.ejs`, data);
+  const html = await ejs.renderFile(__dirname + `/templates/${template}.ejs`, data);
   const { data: resendData, error } = await resend.emails.send({
     from: "Noreply <noreply@trungpham.tech>",
     to: [to],

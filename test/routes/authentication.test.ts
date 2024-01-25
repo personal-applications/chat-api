@@ -6,16 +6,79 @@ import { test } from "node:test";
 import sinon from "sinon";
 import { JWT_EXPIRATION_TIME, JWT_SECRET } from "../../src/config";
 import * as db from "../../src/db";
+import * as mail from "../../src/modules/mail/mail";
 import { build } from "../helper";
 
 test("Authentication routes", async (t) => {
   const app = await build(t);
   const findUserByEmailStub = sinon.stub(db, "findUserByEmail");
   const createUserStub = sinon.stub(db, "createUser");
+  const sendMailStub = sinon.stub(mail, "sendMail");
 
   t.beforeEach(() => {
     findUserByEmailStub.reset();
     createUserStub.reset();
+    sendMailStub.reset();
+  });
+
+  await t.test("POST /auth/reset-password", async (t) => {
+    await t.test("Should throw validation errors if fields are not provided", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/reset-password",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "body must have required property 'token'");
+    });
+
+    await t.test("Should throw a validation error if token is not valid", async (t) => {
+      findUserByEmailStub.resolves(null);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/reset-password",
+        payload: {
+          token: "string",
+          newPassword: "Password123*",
+          confirmPassword: "Password123*",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "Invalid token.");
+    });
+
+    await t.test("Should reset password successfully", async (t) => {
+      findUserByEmailStub.resolves({
+        id: 1,
+        email: "email@email.com",
+        password: "password",
+        firstName: null,
+        lastName: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      sendMailStub.resolves();
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/reset-password",
+        payload: {
+          token: "string",
+          newPassword: "Password123*",
+          confirmPassword: "Password123*",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.equal(
+        response.json().message,
+        "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions."
+      );
+      assert.equal(sendMailStub.called, true);
+    });
   });
 
   await t.test("POST /auth/forgot-password", async (t) => {
@@ -31,6 +94,8 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should not send an email to users if email is not found", async (t) => {
+      findUserByEmailStub.resolves(null);
+
       const response = await app.inject({
         method: "POST",
         url: "/auth/forgot-password",
@@ -39,11 +104,22 @@ test("Authentication routes", async (t) => {
         },
       });
 
-      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-      assert.equal(response.json().message, "body must have required property 'email'");
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.equal(sendMailStub.called, false);
     });
 
     await t.test("Should send an email to users if email is found", async (t) => {
+      findUserByEmailStub.resolves({
+        id: 1,
+        email: "email@email.com",
+        password: "password",
+        firstName: null,
+        lastName: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      sendMailStub.resolves();
+
       const response = await app.inject({
         method: "POST",
         url: "/auth/forgot-password",
@@ -57,6 +133,7 @@ test("Authentication routes", async (t) => {
         response.json().message,
         "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions."
       );
+      assert.equal(sendMailStub.called, true);
     });
   });
 

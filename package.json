@@ -14,7 +14,7 @@
     "dev": "dotenv -- npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App,CopyTemplates\" -c \"yellow.bold,cyan.bold,blue.bold\" \"npm:watch:ts\" \"npm:dev:start\" \"npm:watch:cp-templates\"",
     "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
     "cp-templates": "copyfiles -f src/**/*.ejs dist/modules/mail/templates",
-    "watch:cp-templates": "nodemon --watch src/**/*.ejs --exec \"npm run cp-templates\""
+    "watch:cp-templates": "nodemon --watch src -e .ejs --exec \"npm run cp-templates\""
   },
   "keywords": [],
   "author": "",

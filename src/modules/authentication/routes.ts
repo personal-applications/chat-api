@@ -17,6 +17,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
     "/auth/register",
     {
       schema: {
+        tags: ["Auth"],
         body: {
           type: "object",
           properties: {
@@ -27,6 +28,24 @@ const routes: FastifyPluginAsync = async (fastify) => {
             lastName: { type: "string", minLength: 2 },
           },
           required: ["email", "password", "confirmPassword"],
+        },
+        response: {
+          204: {},
+          400: {
+            description: "Validation error",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
+          500: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
         },
       },
     },
@@ -54,6 +73,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
     "/auth/login",
     {
       schema: {
+        tags: ["Auth"],
         body: {
           type: "object",
           properties: {
@@ -61,6 +81,32 @@ const routes: FastifyPluginAsync = async (fastify) => {
             password: { type: "string", pattern: PASSWORD_REGEX },
           },
           required: ["email", "password"],
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              jwtToken: { type: "string" },
+            },
+            required: ["jwtToken"],
+          },
+          400: {
+            description: "Validation error",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
+          500: {
+            description: "Validation error",
+
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
         },
       },
     },
@@ -96,12 +142,38 @@ const routes: FastifyPluginAsync = async (fastify) => {
     "/auth/forgot-password",
     {
       schema: {
+        tags: ["Auth"],
         body: {
           type: "object",
           properties: {
             email: { type: "string", format: "email" },
           },
           required: ["email"],
+        },
+        response: {
+          200: {
+            description: "Success response",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
+          400: {
+            description: "Validation error",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
+          500: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
         },
       },
     },
@@ -113,6 +185,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
         message: "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions.",
       };
       if (!user) {
+        request.log.info(`Cannot find any users with existing email: ${request.body.email}`);
         return response.status(StatusCodes.OK).send(data);
       }
 
@@ -135,6 +208,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
     "/auth/reset-password",
     {
       schema: {
+        tags: ["Auth"],
         body: {
           type: "object",
           properties: {
