@@ -1,7 +1,7 @@
-import { BACKEND_DOMAIN } from "./config";
+import config from "./config";
 
 export function createServerURL(path: string) {
-  return encodeURIComponent(BACKEND_DOMAIN + path);
+  return encodeURIComponent(config.backend.domain + path);
 }
 
 export function createFullName(firstName?: string, lastName?: string): string {

@@ -1,8 +1,8 @@
 import ejs from "ejs";
 import { Resend } from "resend";
-import { RESEND_API_KEY } from "../../config";
+import config from "../../config";
 
-const resend = new Resend(RESEND_API_KEY);
+const resend = new Resend(config.resend.apiKey);
 
 export type Template = "ForgotPassword";
 export type TemplateOption<T extends Template> = T extends "ForgotPassword"

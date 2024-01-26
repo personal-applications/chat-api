@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
-import { JWT_EXPIRATION_TIME, JWT_EXPIRATION_TIME_FORGOT_PASSWORD, JWT_SECRET, JWT_SECRET_FORGOT_PASSWORD } from "../../config";
+import config from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
 import { createUser, findUserByEmail } from "../../db";
 import { createServerURL } from "../../helper";
@@ -132,8 +132,8 @@ const routes: FastifyPluginAsync = async (fastify) => {
           firstName: user.firstName,
           lastName: user.lastName,
         },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION_TIME }
+        config.jwt.secret,
+        { expiresIn: config.jwt.expirationTime }
       );
       return response.status(StatusCodes.OK).send({ jwtToken });
     }
@@ -189,8 +189,8 @@ const routes: FastifyPluginAsync = async (fastify) => {
         return response.status(StatusCodes.OK).send(data);
       }
 
-      const token = jwt.sign({ email: user.email }, JWT_SECRET_FORGOT_PASSWORD, {
-        expiresIn: JWT_EXPIRATION_TIME_FORGOT_PASSWORD,
+      const token = jwt.sign({ email: user.email }, config.jwt.secretForgotPassword, {
+        expiresIn: config.jwt.expirationTimeForgotPassword,
       });
       const resetLink = createServerURL(`/auth/reset-password?token=${token}`);
       await sendMail<"ForgotPassword">({
@@ -212,13 +212,60 @@ const routes: FastifyPluginAsync = async (fastify) => {
         body: {
           type: "object",
           properties: {
-            email: { type: "string", format: "email" },
+            token: { type: "string" },
+            newPassword: { type: "string", pattern: PASSWORD_REGEX },
+            confirmPassword: { type: "string", pattern: PASSWORD_REGEX },
           },
-          required: ["email"],
+          required: ["token", "newPassword", "confirmPassword"],
+        },
+        response: {
+          200: {
+            description: "Success response",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
+          400: {
+            description: "Validation error",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
+          500: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
+          },
         },
       },
     },
-    () => {}
+    async (request, response) => {
+      const { newPassword, confirmPassword } = request.body;
+      if (newPassword !== confirmPassword) {
+        const error = fastify.httpErrors.badRequest("Passwords do not match.");
+        return response.send(error);
+      }
+
+      let email: string;
+      try {
+        const payload = jwt.verify(request.body.token, config.jwt.secretForgotPassword) as jwt.JwtPayload;
+        email = payload.email;
+      } catch (error) {
+        return fastify.httpErrors.badRequest("Invalid token.");
+      }
+
+      const user = await findUserByEmail(fastify.prisma, email);
+      if (user) {
+      }
+
+      // TODO: Revoke token
+    }
   );
 };
 
