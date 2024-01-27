@@ -4,11 +4,13 @@ import config from "../../config";
 
 const resend = new Resend(config.resend.apiKey);
 
-export type Template = "ForgotPassword";
+export type Template = "ForgotPassword" | "ResetPasswordSuccess";
 export type TemplateOption<T extends Template> = T extends "ForgotPassword"
   ? {
       resetLink: string;
     }
+  : T extends "ResetPasswordSuccess"
+  ? {}
   : never;
 export type SendEmailOption<T extends Template> = {
   to: string;
@@ -18,6 +20,7 @@ export type SendEmailOption<T extends Template> = {
 
 const subjectByTemplate: Record<Template, string> = {
   ForgotPassword: "Reset your password",
+  ResetPasswordSuccess: "Your password has been successfully reset",
 };
 
 export async function sendMail<T extends Template>(options: SendEmailOption<T>) {

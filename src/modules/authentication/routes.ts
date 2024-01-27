@@ -5,9 +5,10 @@ import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 import config from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
-import { createUser, findUserByEmail } from "../../db";
+import { createUser, findUserByEmail, updateUserInfo } from "../../db";
 import { createServerURL } from "../../helper";
 import { sendMail } from "../mail/mail";
+import { revokeToken } from "./service";
 
 const routes: FastifyPluginAsync = async (fastify) => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -52,16 +53,14 @@ const routes: FastifyPluginAsync = async (fastify) => {
     async (request, response) => {
       const { password, confirmPassword } = request.body;
       if (password !== confirmPassword) {
-        const error = fastify.httpErrors.badRequest("Passwords do not match.");
-        return response.send(error);
+        return fastify.httpErrors.badRequest("Passwords do not match.");
       }
 
       request.body.email = request.body.email.toLowerCase();
       // TODO: We can cache user query from DB
       const user = await findUserByEmail(fastify.prisma, request.body.email);
       if (user) {
-        const error = fastify.httpErrors.badRequest("Email is not available.");
-        return response.send(error);
+        return fastify.httpErrors.badRequest("Email is not available.");
       }
 
       request.body.password = await bcrypt.hash(request.body.password, 10);
@@ -117,12 +116,12 @@ const routes: FastifyPluginAsync = async (fastify) => {
       request.body.email = request.body.email.toLowerCase();
       const user = await findUserByEmail(fastify.prisma, request.body.email);
       if (!user) {
-        return response.send(error);
+        return error;
       }
 
       const isPasswordMatched = await bcrypt.compare(request.body.password, user.password);
       if (!isPasswordMatched) {
-        return response.send(error);
+        return error;
       }
 
       const jwtToken = jwt.sign(
@@ -185,7 +184,8 @@ const routes: FastifyPluginAsync = async (fastify) => {
         message: "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions.",
       };
       if (!user) {
-        request.log.info(`Cannot find any users with existing email: ${request.body.email}`);
+        const error = new Error(`Cannot find any users with existing email: ${request.body.email}`);
+        request.log.info(error);
         return response.status(StatusCodes.OK).send(data);
       }
 
@@ -219,7 +219,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
           required: ["token", "newPassword", "confirmPassword"],
         },
         response: {
-          200: {
+          202: {
             description: "Success response",
             type: "object",
             properties: {
@@ -248,8 +248,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
     async (request, response) => {
       const { newPassword, confirmPassword } = request.body;
       if (newPassword !== confirmPassword) {
-        const error = fastify.httpErrors.badRequest("Passwords do not match.");
-        return response.send(error);
+        return fastify.httpErrors.badRequest("Passwords do not match.");
       }
 
       let email: string;
@@ -261,10 +260,22 @@ const routes: FastifyPluginAsync = async (fastify) => {
       }
 
       const user = await findUserByEmail(fastify.prisma, email);
-      if (user) {
+      if (!user) {
+        return fastify.httpErrors.badRequest("Invalid token.");
       }
 
-      // TODO: Revoke token
+      const newHashedPassword = await bcrypt.hash(newPassword, 10);
+      await updateUserInfo(fastify.prisma, email, { password: newHashedPassword });
+      await sendMail<"ResetPasswordSuccess">({
+        to: email,
+        template: "ResetPasswordSuccess",
+        data: {},
+      });
+      await revokeToken(fastify.prisma, request.body.token);
+
+      return response.status(StatusCodes.OK).send({
+        message: "Your password has been successfully reset.",
+      });
     }
   );
 };
