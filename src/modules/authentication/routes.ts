@@ -8,7 +8,7 @@ import { PASSWORD_REGEX } from "../../constants";
 import { createUser, findUserByEmail, updateUserInfo } from "../../db";
 import { createServerURL } from "../../helper";
 import { sendMail } from "../mail/mail";
-import { revokeToken } from "./service";
+import { isTokenRevoked, revokeToken } from "./service";
 
 const routes: FastifyPluginAsync = async (fastify) => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -256,6 +256,10 @@ const routes: FastifyPluginAsync = async (fastify) => {
         const payload = jwt.verify(request.body.token, config.jwt.secretForgotPassword) as jwt.JwtPayload;
         email = payload.email;
       } catch (error) {
+        return fastify.httpErrors.badRequest("Invalid token.");
+      }
+
+      if (await isTokenRevoked(fastify.prisma, request.body.token)) {
         return fastify.httpErrors.badRequest("Invalid token.");
       }
 
