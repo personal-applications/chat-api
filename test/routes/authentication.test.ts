@@ -13,7 +13,7 @@ test("Authentication routes", async (t) => {
   const app = await build(t);
   const findUserByEmailStub = sinon.stub(db.user, "findByEmail");
   const createUserStub = sinon.stub(db.user, "create");
-  const sendMailStub = sinon.stub(mail, "sendMail");
+  const sendMailStub = sinon.stub(mail, "send");
 
   t.beforeEach(() => {
     findUserByEmailStub.reset();

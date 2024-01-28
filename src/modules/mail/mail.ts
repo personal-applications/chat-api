@@ -24,7 +24,7 @@ const subjectByTemplate: Record<Template, string> = {
 };
 
 const mail = {
-  sendMail: async <T extends Template>(options: SendEmailOption<T>) => {
+  send: async <T extends Template>(options: SendEmailOption<T>) => {
     const { to, template, data } = options;
 
     const html = await ejs.renderFile(__dirname + `/templates/${template}.ejs`, data);

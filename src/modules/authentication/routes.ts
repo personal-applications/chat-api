@@ -193,7 +193,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         expiresIn: config.jwt.expirationTimeForgotPassword,
       });
       const resetLink = createServerURL(`/auth/reset-password?token=${token}`);
-      await mail.sendMail<"ForgotPassword">({
+      await mail.send<"ForgotPassword">({
         to: request.body.email,
         template: "ForgotPassword",
         data: {
@@ -270,7 +270,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
 
       const newHashedPassword = await bcrypt.hash(newPassword, 10);
       await db.user.updateInfo(server.prisma, email, { password: newHashedPassword });
-      await mail.sendMail<"ResetPasswordSuccess">({
+      await mail.send<"ResetPasswordSuccess">({
         to: email,
         template: "ResetPasswordSuccess",
         data: {},
