@@ -12,19 +12,24 @@ import { build } from "../helper";
 
 test("Authentication routes", async (t) => {
   const app = await build(t);
+
   const findUserByEmailStub = sinon.stub(db.user, "findByEmail");
   const createUserStub = sinon.stub(db.user, "create");
   const updateUserInfoStub = sinon.stub(db.user, "updateInfo");
+
   const sendMailStub = sinon.stub(mail, "send");
+
   const isTokenRevokedStub = sinon.stub(authenticationService, "isTokenRevoked");
   const revokeTokenStub = sinon.stub(authenticationService, "revokeToken");
 
   t.beforeEach(() => {
     findUserByEmailStub.reset();
     createUserStub.reset();
-    sendMailStub.reset();
-    isTokenRevokedStub.reset();
     updateUserInfoStub.reset();
+
+    sendMailStub.reset();
+
+    isTokenRevokedStub.reset();
     revokeTokenStub.reset();
   });
 
