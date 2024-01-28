@@ -4,15 +4,15 @@ import jwt from "jsonwebtoken";
 import assert from "node:assert";
 import { test } from "node:test";
 import sinon from "sinon";
-import { JWT_EXPIRATION_TIME, JWT_SECRET } from "../../src/config";
-import * as db from "../../src/db";
-import * as mail from "../../src/modules/mail/mail";
+import config from "../../src/config";
+import db from "../../src/db";
+import mail from "../../src/modules/mail/mail";
 import { build } from "../helper";
 
 test("Authentication routes", async (t) => {
   const app = await build(t);
-  const findUserByEmailStub = sinon.stub(db, "findUserByEmail");
-  const createUserStub = sinon.stub(db, "createUser");
+  const findUserByEmailStub = sinon.stub(db.user, "findByEmail");
+  const createUserStub = sinon.stub(db.user, "create");
   const sendMailStub = sinon.stub(mail, "sendMail");
 
   t.beforeEach(() => {
@@ -234,7 +234,7 @@ test("Authentication routes", async (t) => {
       });
 
       const jwtToken = response.json().jwtToken;
-      const payload = jwt.verify(jwtToken, JWT_SECRET) as jwt.JwtPayload;
+      const payload = jwt.verify(jwtToken, config.jwt.secret) as jwt.JwtPayload;
 
       // @ts-ignore
       assert.equal(payload.exp - Math.floor(Date.now() / 1000), JWT_EXPIRATION_TIME);

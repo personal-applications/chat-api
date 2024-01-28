@@ -5,12 +5,12 @@ import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 import config from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
-import { createUser, findUserByEmail, updateUserInfo } from "../../db";
+import db from "../../db";
 import { createServerURL } from "../../helper";
-import { sendMail } from "../mail/mail";
-import { isTokenRevoked, revokeToken } from "./service";
+import mail from "../mail/mail";
+import authenticationService from "./service";
 
-const routes: FastifyPluginAsync = async (fastify) => {
+const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
 
   // Authentication
@@ -58,13 +58,13 @@ const routes: FastifyPluginAsync = async (fastify) => {
 
       request.body.email = request.body.email.toLowerCase();
       // TODO: We can cache user query from DB
-      const user = await findUserByEmail(fastify.prisma, request.body.email);
+      const user = await db.user.findByEmail(server.prisma, request.body.email);
       if (user) {
         return fastify.httpErrors.badRequest("Email is not available.");
       }
 
       request.body.password = await bcrypt.hash(request.body.password, 10);
-      await createUser(fastify.prisma, request.body.email, request.body.password, request.body.firstName, request.body.lastName);
+      await db.user.create(server.prisma, request.body.email, request.body.password, request.body.firstName, request.body.lastName);
       return response.status(StatusCodes.NO_CONTENT).send();
     }
   );
@@ -114,7 +114,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
       const error = fastify.httpErrors.badRequest("Invalid credentials.");
 
       request.body.email = request.body.email.toLowerCase();
-      const user = await findUserByEmail(fastify.prisma, request.body.email);
+      const user = await db.user.findByEmail(server.prisma, request.body.email);
       if (!user) {
         return error;
       }
@@ -179,7 +179,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
     async (request, response) => {
       request.body.email = request.body.email.toLowerCase();
 
-      const user = await findUserByEmail(fastify.prisma, request.body.email);
+      const user = await db.user.findByEmail(server.prisma, request.body.email);
       const data = {
         message: "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions.",
       };
@@ -193,7 +193,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
         expiresIn: config.jwt.expirationTimeForgotPassword,
       });
       const resetLink = createServerURL(`/auth/reset-password?token=${token}`);
-      await sendMail<"ForgotPassword">({
+      await mail.sendMail<"ForgotPassword">({
         to: request.body.email,
         template: "ForgotPassword",
         data: {
@@ -259,23 +259,23 @@ const routes: FastifyPluginAsync = async (fastify) => {
         return fastify.httpErrors.badRequest("Invalid token.");
       }
 
-      if (await isTokenRevoked(fastify.prisma, request.body.token)) {
+      if (await authenticationService.isTokenRevoked(server.prisma, request.body.token)) {
         return fastify.httpErrors.badRequest("Invalid token.");
       }
 
-      const user = await findUserByEmail(fastify.prisma, email);
+      const user = await db.user.findByEmail(server.prisma, email);
       if (!user) {
         return fastify.httpErrors.badRequest("Invalid token.");
       }
 
       const newHashedPassword = await bcrypt.hash(newPassword, 10);
-      await updateUserInfo(fastify.prisma, email, { password: newHashedPassword });
-      await sendMail<"ResetPasswordSuccess">({
+      await db.user.updateInfo(server.prisma, email, { password: newHashedPassword });
+      await mail.sendMail<"ResetPasswordSuccess">({
         to: email,
         template: "ResetPasswordSuccess",
         data: {},
       });
-      await revokeToken(fastify.prisma, request.body.token);
+      await db.revokedToken.create(server.prisma, request.body.token);
 
       return response.status(StatusCodes.OK).send({
         message: "Your password has been successfully reset.",
@@ -284,4 +284,4 @@ const routes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-export default routes;
+export default authenticationRoutes;

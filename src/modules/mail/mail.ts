@@ -23,20 +23,24 @@ const subjectByTemplate: Record<Template, string> = {
   ResetPasswordSuccess: "Your password has been successfully reset",
 };
 
-export async function sendMail<T extends Template>(options: SendEmailOption<T>) {
-  const { to, template, data } = options;
+const mail = {
+  sendMail: async <T extends Template>(options: SendEmailOption<T>) => {
+    const { to, template, data } = options;
 
-  const html = await ejs.renderFile(__dirname + `/templates/${template}.ejs`, data);
-  const { data: resendData, error } = await resend.emails.send({
-    from: "Noreply <noreply@trungpham.tech>",
-    to: [to],
-    subject: subjectByTemplate[template],
-    html,
-  });
+    const html = await ejs.renderFile(__dirname + `/templates/${template}.ejs`, data);
+    const { data: resendData, error } = await resend.emails.send({
+      from: "Noreply <noreply@trungpham.tech>",
+      to: [to],
+      subject: subjectByTemplate[template],
+      html,
+    });
 
-  if (error) {
-    return console.error({ error });
-  }
+    if (error) {
+      return console.error({ error });
+    }
 
-  return console.log(`Send email success: ${JSON.stringify(resendData)}`);
-}
+    return console.log(`Send email success: ${JSON.stringify(resendData)}`);
+  },
+};
+
+export default mail;
