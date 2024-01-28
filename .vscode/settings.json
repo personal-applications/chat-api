@@ -1,0 +1,7 @@
+{
+  "cSpell.words": ["fastify"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": "always"
+  }
+}
