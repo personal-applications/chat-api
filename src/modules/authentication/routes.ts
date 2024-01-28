@@ -275,7 +275,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         template: "ResetPasswordSuccess",
         data: {},
       });
-      await db.revokedToken.create(server.prisma, request.body.token);
+      await authenticationService.revokeToken(server.prisma, request.body.token);
 
       return response.status(StatusCodes.OK).send({
         message: "Your password has been successfully reset.",

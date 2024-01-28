@@ -6,6 +6,7 @@ import { test } from "node:test";
 import sinon from "sinon";
 import config from "../../src/config";
 import db from "../../src/db";
+import authenticationService from "../../src/modules/authentication/service";
 import mail from "../../src/modules/mail/mail";
 import { build } from "../helper";
 
@@ -13,12 +14,18 @@ test("Authentication routes", async (t) => {
   const app = await build(t);
   const findUserByEmailStub = sinon.stub(db.user, "findByEmail");
   const createUserStub = sinon.stub(db.user, "create");
+  const updateUserInfoStub = sinon.stub(db.user, "updateInfo");
   const sendMailStub = sinon.stub(mail, "send");
+  const isTokenRevokedStub = sinon.stub(authenticationService, "isTokenRevoked");
+  const revokeTokenStub = sinon.stub(authenticationService, "revokeToken");
 
   t.beforeEach(() => {
     findUserByEmailStub.reset();
     createUserStub.reset();
     sendMailStub.reset();
+    isTokenRevokedStub.reset();
+    updateUserInfoStub.reset();
+    revokeTokenStub.reset();
   });
 
   await t.test("POST /auth/reset-password", async (t) => {
@@ -34,8 +41,6 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should throw a validation error if token is not valid", async (t) => {
-      findUserByEmailStub.resolves(null);
-
       const response = await app.inject({
         method: "POST",
         url: "/auth/reset-password",
@@ -50,7 +55,27 @@ test("Authentication routes", async (t) => {
       assert.equal(response.json().message, "Invalid token.");
     });
 
+    await t.test("Should throw a validation error if token is revoked", async (t) => {
+      const token = jwt.sign({ email: "email@email.com" }, config.jwt.secretForgotPassword, { expiresIn: config.jwt.expirationTimeForgotPassword });
+      isTokenRevokedStub.resolves(true);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/auth/reset-password",
+        payload: {
+          token: token,
+          newPassword: "Password123*",
+          confirmPassword: "Password123*",
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "Invalid token.");
+    });
+
     await t.test("Should reset password successfully", async (t) => {
+      const token = jwt.sign({ email: "email@email.com" }, config.jwt.secretForgotPassword, { expiresIn: config.jwt.expirationTimeForgotPassword });
+      isTokenRevokedStub.resolves(false);
       findUserByEmailStub.resolves({
         id: 1,
         email: "email@email.com",
@@ -61,23 +86,24 @@ test("Authentication routes", async (t) => {
         updatedAt: new Date(),
       });
       sendMailStub.resolves();
+      updateUserInfoStub.resolves();
+      revokeTokenStub.resolves();
 
       const response = await app.inject({
         method: "POST",
         url: "/auth/reset-password",
         payload: {
-          token: "string",
+          token: token,
           newPassword: "Password123*",
           confirmPassword: "Password123*",
         },
       });
 
       assert.equal(response.statusCode, StatusCodes.OK);
-      assert.equal(
-        response.json().message,
-        "Password reset link has been sent to your email address. Please check your email (including your spam folder) for further instructions."
-      );
+      assert.equal(response.json().message, "Your password has been successfully reset.");
       assert.equal(sendMailStub.called, true);
+      assert.equal(updateUserInfoStub.called, true);
+      assert.equal(revokeTokenStub.called, true);
     });
   });
 
@@ -236,8 +262,7 @@ test("Authentication routes", async (t) => {
       const jwtToken = response.json().jwtToken;
       const payload = jwt.verify(jwtToken, config.jwt.secret) as jwt.JwtPayload;
 
-      // @ts-ignore
-      assert.equal(payload.exp - Math.floor(Date.now() / 1000), JWT_EXPIRATION_TIME);
+      assert.equal((payload.exp ?? 0) - Math.floor(Date.now() / 1000), config.jwt.expirationTime);
       assert.equal(payload.id, 1);
       assert.equal(payload.email, "email@email.com");
       assert.equal(payload.firstName, null);
