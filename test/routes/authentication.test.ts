@@ -1,17 +1,29 @@
+import { User } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { StatusCodes } from "http-status-codes";
-import jwt from "jsonwebtoken";
+import jsonwebtoken from "jsonwebtoken";
 import assert from "node:assert";
 import { test } from "node:test";
 import sinon from "sinon";
 import config from "../../src/config";
 import db from "../../src/db";
 import authenticationService from "../../src/modules/authentication/service";
+import jwt from "../../src/modules/jwt/jwt";
 import mail from "../../src/modules/mail/mail";
 import { build } from "../helper";
 
 test("Authentication routes", async (t) => {
   const app = await build(t);
+
+  const user: User = {
+    id: 1,
+    email: "email@email.com",
+    password: "password",
+    firstName: "firstName",
+    lastName: "lastName",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   const findUserByEmailStub = sinon.stub(db.user, "findByEmail");
   const createUserStub = sinon.stub(db.user, "create");
@@ -61,7 +73,7 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should throw a validation error if token is revoked", async (t) => {
-      const token = jwt.sign({ email: "email@email.com" }, config.jwt.secretForgotPassword, { expiresIn: config.jwt.expirationTimeForgotPassword });
+      const token = jwt.createForgotPasswordToken(user);
       isTokenRevokedStub.resolves(true);
 
       const response = await app.inject({
@@ -79,17 +91,9 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should reset password successfully", async (t) => {
-      const token = jwt.sign({ email: "email@email.com" }, config.jwt.secretForgotPassword, { expiresIn: config.jwt.expirationTimeForgotPassword });
+      const token = jwt.createForgotPasswordToken(user);
       isTokenRevokedStub.resolves(false);
-      findUserByEmailStub.resolves({
-        id: 1,
-        email: "email@email.com",
-        password: "password",
-        firstName: null,
-        lastName: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      findUserByEmailStub.resolves(user);
       sendMailStub.resolves();
       updateUserInfoStub.resolves();
       revokeTokenStub.resolves();
@@ -265,7 +269,7 @@ test("Authentication routes", async (t) => {
       });
 
       const jwtToken = response.json().jwtToken;
-      const payload = jwt.verify(jwtToken, config.jwt.secret) as jwt.JwtPayload;
+      const payload = jsonwebtoken.verify(jwtToken, config.jwt.secret) as jsonwebtoken.JwtPayload;
 
       assert.equal((payload.exp ?? 0) - Math.floor(Date.now() / 1000), config.jwt.expirationTime);
       assert.equal(payload.id, 1);

@@ -2,11 +2,12 @@ import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts
 import bcrypt from "bcrypt";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import jwt from "jsonwebtoken";
+import jsonwebtoken from "jsonwebtoken";
 import config from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
 import db from "../../db";
 import { createServerURL } from "../../helper";
+import jwt from "../jwt/jwt";
 import mail from "../mail/mail";
 import authenticationService from "./service";
 
@@ -124,16 +125,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         return error;
       }
 
-      const jwtToken = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expirationTime }
-      );
+      const jwtToken = jwt.createLogInToken(user);
       return response.status(StatusCodes.OK).send({ jwtToken });
     }
   );
@@ -189,9 +181,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         return response.status(StatusCodes.OK).send(data);
       }
 
-      const token = jwt.sign({ email: user.email }, config.jwt.secretForgotPassword, {
-        expiresIn: config.jwt.expirationTimeForgotPassword,
-      });
+      const token = jwt.createForgotPasswordToken(user);
       const resetLink = createServerURL(`/auth/reset-password?token=${token}`);
       await mail.send<"ForgotPassword">({
         to: request.body.email,
@@ -253,7 +243,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
 
       let email: string;
       try {
-        const payload = jwt.verify(request.body.token, config.jwt.secretForgotPassword) as jwt.JwtPayload;
+        const payload = jsonwebtoken.verify(request.body.token, config.jwt.secretForgotPassword) as jsonwebtoken.JwtPayload;
         email = payload.email;
       } catch (error) {
         return fastify.httpErrors.badRequest("Invalid token.");
