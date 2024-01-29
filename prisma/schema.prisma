@@ -18,10 +18,23 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  receivedMessages Message[] @relation("receivedMessages")
+  sentMessages     Message[] @relation("sentMessages")
 }
 
 model RemovedToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  from      User     @relation(fields: [fromId], references: [id], name: "receivedMessages")
+  fromId    Int
+  to        User     @relation(fields: [toId], references: [id], name: "sentMessages")
+  toId      Int
+  content   String
   createdAt DateTime @default(now())
 }
