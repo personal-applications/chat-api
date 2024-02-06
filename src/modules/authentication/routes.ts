@@ -96,16 +96,8 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         return error;
       }
 
-      const jwt = await response.jwtSign(
-        {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
-        { expiresIn: config.jwt.expirationTime }
-      );
-      return response.status(StatusCodes.OK).send({ jwt });
+      const jwtToken = jwt.createLogInToken(user);
+      return response.status(StatusCodes.OK).send({ jwt: jwtToken });
     }
   );
   server.post(
