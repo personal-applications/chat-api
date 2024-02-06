@@ -73,9 +73,9 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
           200: {
             type: "object",
             properties: {
-              jwtToken: { type: "string" },
+              jwt: { type: "string" },
             },
-            required: ["jwtToken"],
+            required: ["jwt"],
           },
           ...serverErrorDefs,
         },
@@ -97,7 +97,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const jwtToken = jwt.createLogInToken(user);
-      return response.status(StatusCodes.OK).send({ jwtToken });
+      return response.status(StatusCodes.OK).send({ jwt: jwtToken });
     }
   );
   server.post(

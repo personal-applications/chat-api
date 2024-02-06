@@ -245,7 +245,7 @@ test("Authentication routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.OK);
-      assert.ok(typeof response.json().jwtToken, "string");
+      assert.ok(typeof response.json().jwt, "string");
     });
 
     await t.test("Should create a jwt token with correct payload", async (t) => {
@@ -268,8 +268,8 @@ test("Authentication routes", async (t) => {
         },
       });
 
-      const jwtToken = response.json().jwtToken;
-      const payload = jsonwebtoken.verify(jwtToken, config.jwt.secret) as jsonwebtoken.JwtPayload;
+      const jwt = response.json().jwt;
+      const payload = jsonwebtoken.verify(jwt, config.jwt.secret) as jsonwebtoken.JwtPayload;
 
       assert.equal((payload.exp ?? 0) - Math.floor(Date.now() / 1000), config.jwt.expirationTime);
       assert.equal(payload.id, 1);
