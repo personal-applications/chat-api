@@ -1,7 +1,7 @@
 import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { serverErrorDefs } from "../../plugins/swagger";
+import { authServerErrorDefs } from "../../plugins/swagger";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -20,8 +20,13 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         },
         response: {
           204: {},
-          ...serverErrorDefs,
+          ...authServerErrorDefs,
         },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
       },
     },
     async (request, response) => {
