@@ -35,15 +35,25 @@ export const authServerErrorDefs = {
 
 export default fp<SwaggerOptions>(async (fastify) => {
   await fastify.register(swagger, {
-    swagger: {
+    openapi: {
       info: {
         title: "Chat API",
         version: "1.0.0",
       },
-      host: "localhost:3000",
-      schemes: ["http"],
-      consumes: ["application/json"],
-      produces: ["application/json"],
+      servers: [
+        {
+          url: "http://localhost:3000",
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
     },
   });
 
