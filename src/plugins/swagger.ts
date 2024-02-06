@@ -1,6 +1,7 @@
 import swagger, { SwaggerOptions } from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 import fp from "fastify-plugin";
+import { ReasonPhrases } from "http-status-codes";
 
 export const serverErrorDefs = {
   400: {
@@ -12,6 +13,18 @@ export const serverErrorDefs = {
     required: ["message"],
   },
   500: {
+    type: "object",
+    properties: {
+      message: { type: "string" },
+    },
+    required: ["message"],
+  },
+};
+
+export const authServerErrorDefs = {
+  ...serverErrorDefs,
+  401: {
+    description: ReasonPhrases.UNAUTHORIZED,
     type: "object",
     properties: {
       message: { type: "string" },
