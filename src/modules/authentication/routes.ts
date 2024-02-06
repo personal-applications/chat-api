@@ -7,6 +7,7 @@ import config from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
 import db from "../../db";
 import { createServerURL } from "../../helper";
+import { serverErrorDefs } from "../../plugins/swagger";
 import jwt from "../jwt/jwt";
 import mail from "../mail/mail";
 import authenticationService from "./service";
@@ -33,21 +34,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         },
         response: {
           204: {},
-          400: {
-            description: "Validation error",
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
-          500: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
+          ...serverErrorDefs,
         },
       },
     },
@@ -90,23 +77,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             },
             required: ["jwtToken"],
           },
-          400: {
-            description: "Validation error",
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
-          500: {
-            description: "Validation error",
-
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
+          ...serverErrorDefs,
         },
       },
     },
@@ -150,21 +121,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             },
             required: ["message"],
           },
-          400: {
-            description: "Validation error",
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
-          500: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
+          ...serverErrorDefs,
         },
       },
     },
@@ -217,21 +174,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             },
             required: ["message"],
           },
-          400: {
-            description: "Validation error",
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
-          500: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
+          ...serverErrorDefs,
         },
       },
     },

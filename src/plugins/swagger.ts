@@ -2,6 +2,24 @@ import swagger, { SwaggerOptions } from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 import fp from "fastify-plugin";
 
+export const serverErrorDefs = {
+  400: {
+    description: "Validation error",
+    type: "object",
+    properties: {
+      message: { type: "string" },
+    },
+    required: ["message"],
+  },
+  500: {
+    type: "object",
+    properties: {
+      message: { type: "string" },
+    },
+    required: ["message"],
+  },
+};
+
 export default fp<SwaggerOptions>(async (fastify) => {
   await fastify.register(swagger, {
     swagger: {

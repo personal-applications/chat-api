@@ -1,5 +1,7 @@
 import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { FastifyPluginAsync } from "fastify";
+import { StatusCodes } from "http-status-codes";
+import { serverErrorDefs } from "../../plugins/swagger";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -18,25 +20,13 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         },
         response: {
           204: {},
-          400: {
-            description: "Validation error",
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
-          500: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-          },
+          ...serverErrorDefs,
         },
       },
     },
-    async (request, response) => {}
+    async (request, response) => {
+      return response.status(StatusCodes.OK).send({});
+    }
   );
 };
 
