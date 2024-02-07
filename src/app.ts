@@ -11,7 +11,11 @@ const options: AppOptions = {};
 
 const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void> => {
   // Place here your custom code!
-  await fastify.register(fastifyPrisma);
+  await fastify.register(fastifyPrisma, {
+    clientConfig: {
+      log: ["query"],
+    },
+  });
   await fastify.register(fastifyJwt, {
     secret: config.jwt.secret,
   });
