@@ -1,11 +1,17 @@
 import { FastifyPluginAsync } from "fastify";
-import { requireAuth } from "../modules/authentication/plugin";
 import authenticationRoutes from "../modules/authentication/routes";
 import messageRoutes from "../modules/message/route";
 
 const authRoutes: FastifyPluginAsync = async (fastify, ops) => {
   fastify.register(async (ctx) => {
-    ctx.register(requireAuth);
+    ctx.addHook("onRequest", async (request) => {
+      try {
+        await request.jwtVerify();
+      } catch (error) {
+        throw error;
+      }
+    });
+
     await messageRoutes(ctx, ops);
   });
 };

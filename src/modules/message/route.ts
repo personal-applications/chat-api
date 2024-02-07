@@ -30,6 +30,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       },
     },
     async (request, response) => {
+      console.log(request.user);
       return response.status(StatusCodes.OK).send({});
     }
   );

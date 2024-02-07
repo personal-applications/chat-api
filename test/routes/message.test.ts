@@ -1,16 +1,12 @@
 import { User } from "@prisma/client";
 import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
-import test, { beforeEach, describe } from "node:test";
-import Sinon from "sinon";
-import db from "../../src/db";
+import test from "node:test";
 import jwt from "../../src/modules/jwt/jwt";
 import { build } from "../helper";
 
 test("Message routes", async (t) => {
   const app = await build(t);
-
-  const findByEmail = Sinon.stub(db.user, "findByEmail");
 
   const user: User = {
     id: "1",
@@ -31,11 +27,6 @@ test("Message routes", async (t) => {
     });
 
     assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
-  });
-
-  await describe("Authenticated");
-  beforeEach(() => {
-    findByEmail.resolves(user);
   });
 
   await t.test("Should throw validation errors if fields are not provided", async (t) => {
