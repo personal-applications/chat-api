@@ -59,5 +59,9 @@ export default fp<SwaggerOptions>(async (fastify) => {
 
   await fastify.register(swaggerUI, {
     routePrefix: "/api-doc",
+    uiConfig: {
+      persistAuthorization: true,
+      tagsSorter: "alpha",
+    },
   });
 });
