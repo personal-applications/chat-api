@@ -34,10 +34,6 @@ test("Authentication routes", async (t) => {
   const isTokenRevokedStub = sinon.stub(authenticationService, "isTokenRevoked");
   const revokeTokenStub = sinon.stub(authenticationService, "revokeToken");
 
-  t.beforeEach(() => {
-    sinon.reset();
-  });
-
   await t.test("POST /auth/reset-password", async (t) => {
     await t.test("Should throw validation errors if fields are not provided", async (t) => {
       const response = await app.inject({

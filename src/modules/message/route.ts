@@ -1,6 +1,8 @@
 import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
+import { User } from "@prisma/client";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
+import db from "../../db";
 import { authServerErrorDefs } from "../../plugins/swagger";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
@@ -15,11 +17,16 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           type: "object",
           properties: {
             content: { type: "string", minLength: 1 },
+            toUserId: { type: "number" },
           },
-          required: ["content"],
+          required: ["content", "toUserId"],
         },
         response: {
-          204: {},
+          200: {
+            type: "object",
+            properties: { id: { type: "number" } },
+            required: ["id"],
+          },
           ...authServerErrorDefs,
         },
         security: [
@@ -30,8 +37,18 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       },
     },
     async (request, response) => {
-      console.log(request.user);
-      return response.status(StatusCodes.OK).send({});
+      const user = request.user as User;
+      if (request.body.toUserId !== user.id) {
+        const toUser = await db.user.findById(request.server.prisma, request.body.toUserId);
+        if (!toUser) {
+          return fastify.httpErrors.badRequest(
+            "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again."
+          );
+        }
+      }
+
+      const message = await db.message.create(request.server.prisma, (request.user as User).id, request.body.content, request.body.toUserId);
+      return response.status(StatusCodes.OK).send({ id: message.id });
     }
   );
 };

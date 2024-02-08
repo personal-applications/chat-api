@@ -18,6 +18,9 @@ const db = {
     findByEmail: (prisma: PrismaClient, email: string) => {
       return prisma.user.findFirst({ where: { email } });
     },
+    findById: (prisma: PrismaClient, id: number) => {
+      return prisma.user.findFirst({ where: { id } });
+    },
   },
   revokedToken: {
     find: (prisma: PrismaClient, hash: string) => {
@@ -25,6 +28,17 @@ const db = {
     },
     create: (prisma: PrismaClient, token: string) => {
       return prisma.removedToken.create({ data: { token } });
+    },
+  },
+  message: {
+    create: (prisma: PrismaClient, fromId: number, content: string, toId: number) => {
+      return prisma.message.create({
+        data: {
+          content,
+          toId,
+          fromId,
+        },
+      });
     },
   },
 };
