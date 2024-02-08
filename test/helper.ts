@@ -3,9 +3,11 @@ const helper = require("fastify-cli/helper.js");
 import { FastifyInstance } from "fastify";
 import * as test from "node:test";
 import * as path from "path";
+import Sinon from "sinon";
 
 export type TestContext = {
   after: typeof test.after;
+  beforeEach: typeof test.beforeEach;
 };
 
 const AppPath = path.join(__dirname, "..", "src", "app.ts");
@@ -28,6 +30,10 @@ async function build(t: TestContext) {
 
   // Tear down our app after we are done
   t.after(() => void app.close());
+
+  t.beforeEach(() => {
+    Sinon.reset();
+  });
 
   return app as FastifyInstance;
 }
