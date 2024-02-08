@@ -1,4 +1,3 @@
-import { User } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { StatusCodes } from "http-status-codes";
 import jsonwebtoken from "jsonwebtoken";
@@ -10,20 +9,11 @@ import db from "../../src/db";
 import authenticationService from "../../src/modules/authentication/service";
 import jwt from "../../src/modules/jwt/jwt";
 import mail from "../../src/modules/mail/mail";
+import { authenticatedUser } from "../data";
 import { build } from "../helper";
 
 test("Authentication routes", async (t) => {
   const app = await build(t);
-
-  const user: User = {
-    id: 1,
-    email: "email@email.com",
-    password: "password",
-    firstName: "firstName",
-    lastName: "lastName",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
 
   const findUserByEmailStub = sinon.stub(db.user, "findByEmail");
   const createUserStub = sinon.stub(db.user, "create");
@@ -62,7 +52,7 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should throw a validation error if token is revoked", async (t) => {
-      const token = jwt.createForgotPasswordToken(user);
+      const token = jwt.createForgotPasswordToken(authenticatedUser);
       isTokenRevokedStub.resolves(true);
 
       const response = await app.inject({
@@ -80,9 +70,9 @@ test("Authentication routes", async (t) => {
     });
 
     await t.test("Should reset password successfully", async (t) => {
-      const token = jwt.createForgotPasswordToken(user);
+      const token = jwt.createForgotPasswordToken(authenticatedUser);
       isTokenRevokedStub.resolves(false);
-      findUserByEmailStub.resolves(user);
+      findUserByEmailStub.resolves(authenticatedUser);
       sendMailStub.resolves();
       updateUserInfoStub.resolves();
       revokeTokenStub.resolves();

@@ -1,10 +1,9 @@
-import { User } from "@prisma/client";
+import { loginToken } from "data";
 import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
 import db from "../../src/db";
-import jwt from "../../src/modules/jwt/jwt";
 import { build } from "../helper";
 
 test("Message routes", async (t) => {
@@ -12,17 +11,6 @@ test("Message routes", async (t) => {
 
   const findByIdUserStub = Sinon.stub(db.user, "findById");
   const createMessageStub = Sinon.stub(db.message, "create");
-
-  const user: User = {
-    id: 1,
-    email: "email@email.com",
-    password: "Password123*",
-    firstName: "firstName",
-    lastName: "lastName",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-  const token = jwt.createLogInToken(user);
 
   t.beforeEach(() => {
     Sinon.reset();
@@ -44,7 +32,7 @@ test("Message routes", async (t) => {
       url: "/messages",
       payload: {},
       headers: {
-        authorization: `Bearer ${token}`,
+        authorization: `Bearer ${loginToken}`,
       },
     });
 
@@ -63,7 +51,7 @@ test("Message routes", async (t) => {
         toUserId: 0,
       },
       headers: {
-        authorization: `Bearer ${token}`,
+        authorization: `Bearer ${loginToken}`,
       },
     });
 
@@ -86,7 +74,7 @@ test("Message routes", async (t) => {
         toUserId: 1,
       },
       headers: {
-        authorization: `Bearer ${token}`,
+        authorization: `Bearer ${loginToken}`,
       },
     });
 
