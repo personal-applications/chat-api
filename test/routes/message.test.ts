@@ -1,9 +1,9 @@
-import { loginToken } from "data";
 import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
 import db from "../../src/db";
+import { loginToken } from "../data";
 import { build } from "../helper";
 
 test("Message routes", async (t) => {
