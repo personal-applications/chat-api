@@ -35,14 +35,7 @@ test("Authentication routes", async (t) => {
   const revokeTokenStub = sinon.stub(authenticationService, "revokeToken");
 
   t.beforeEach(() => {
-    findUserByEmailStub.reset();
-    createUserStub.reset();
-    updateUserInfoStub.reset();
-
-    sendMailStub.reset();
-
-    isTokenRevokedStub.reset();
-    revokeTokenStub.reset();
+    sinon.reset();
   });
 
   await t.test("POST /auth/reset-password", async (t) => {
