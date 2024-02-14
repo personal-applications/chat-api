@@ -48,7 +48,7 @@ test("Message routes", async (t) => {
       url: "/messages",
       payload: {
         content: "content",
-        toUserId: 0,
+        toId: 0,
       },
       headers: {
         authorization: `Bearer ${loginToken}`,
@@ -71,7 +71,7 @@ test("Message routes", async (t) => {
       url: "/messages",
       payload: {
         content: "content",
-        toUserId: 1,
+        toId: 1,
       },
       headers: {
         authorization: `Bearer ${loginToken}`,
