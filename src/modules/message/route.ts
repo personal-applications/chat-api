@@ -17,9 +17,9 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           type: "object",
           properties: {
             content: { type: "string", minLength: 1 },
-            toUserId: { type: "number" },
+            toId: { type: "number" },
           },
-          required: ["content", "toUserId"],
+          required: ["content", "toId"],
         },
         response: {
           200: {
@@ -38,8 +38,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const user = request.user as User;
-      if (request.body.toUserId !== user.id) {
-        const toUser = await db.user.findById(request.server.prisma, request.body.toUserId);
+      if (request.body.toId !== user.id) {
+        const toUser = await db.user.findById(request.server.prisma, request.body.toId);
         if (!toUser) {
           return fastify.httpErrors.badRequest(
             "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again."
@@ -47,7 +47,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
       }
 
-      const message = await db.message.create(request.server.prisma, (request.user as User).id, request.body.content, request.body.toUserId);
+      const message = await db.message.create(request.server.prisma, (request.user as User).id, request.body.content, request.body.toId);
       return response.status(StatusCodes.OK).send({ id: message.id });
     }
   );
