@@ -1,15 +1,23 @@
 import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
 import fastifyJwt from "@fastify/jwt";
 import fastifyPrisma from "@joggr/fastify-prisma";
+import addFormats from "ajv-formats";
 import { FastifyPluginAsync, FastifyServerOptions } from "fastify";
 import { join } from "path";
 import config from "./config";
+
+import Ajv2019 from "ajv/dist/2019";
+const ajv = new Ajv2019();
+addFormats(ajv);
 
 export interface AppOptions extends FastifyServerOptions, Partial<AutoloadPluginOptions> {}
 // Pass --options via CLI arguments in command to enable these options.
 const options: AppOptions = {};
 
 const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void> => {
+  fastify.setValidatorCompiler(({ schema }) => {
+    return ajv.compile(schema);
+  });
   // Place here your custom code!
   await fastify.register(fastifyPrisma, {
     clientConfig: {
