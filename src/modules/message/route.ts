@@ -42,7 +42,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         const toUser = await db.user.findById(request.server.prisma, request.body.toId);
         if (!toUser) {
           return fastify.httpErrors.badRequest(
-            "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again."
+            "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
           );
         }
       }
