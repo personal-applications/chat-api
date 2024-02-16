@@ -7,7 +7,9 @@ import { join } from "path";
 import config from "./config";
 
 import Ajv2019 from "ajv/dist/2019";
-const ajv = new Ajv2019();
+const ajv = new Ajv2019({
+  coerceTypes: true,
+});
 addFormats(ajv);
 
 export interface AppOptions extends FastifyServerOptions, Partial<AutoloadPluginOptions> {}
