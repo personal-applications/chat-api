@@ -1,4 +1,6 @@
-import { PrismaClient, User } from "@prisma/client";
+import { Message, PrismaClient, User } from "@prisma/client";
+import { CursorPaginationCondition, CursorPaginationResult } from "./pagination";
+import _ from "lodash";
 
 const db = {
   user: {
@@ -8,8 +10,8 @@ const db = {
           email: email,
           password: password,
           firstName: firstName,
-          lastName: lastName
-        }
+          lastName: lastName,
+        },
       });
     },
     updateInfo: (prisma: PrismaClient, email: string, info: Partial<Pick<User, "firstName" | "lastName" | "password">>) => {
@@ -20,6 +22,19 @@ const db = {
     },
     findById: (prisma: PrismaClient, id: number) => {
       return prisma.user.findFirst({ where: { id } });
+    },
+    findByIds: (prisma: PrismaClient, ids: number[]): Promise<User[]> => {
+      if (ids.length === 0) {
+        return Promise.resolve([]);
+      }
+      return prisma.user.findMany({
+        where: { id: { in: ids } },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
     },
   },
   revokedToken: {
@@ -36,10 +51,72 @@ const db = {
         data: {
           content,
           toId,
-          fromId
+          fromId,
+        },
+      });
+    },
+    list: async (
+      prisma: PrismaClient,
+      condition: CursorPaginationCondition & {
+        user: User;
+      },
+    ): Promise<CursorPaginationResult<Message>> => {
+      /**
+       * This query retrieves the most recent message for each unique combination of fromId and toId,
+       * ensuring that the specified user (with ID ${condition.userId}) is either the sender or receiver.
+       * The result is ordered by the latest timestamp
+       */
+      let messages: Message[] = await prisma.$queryRaw`
+          select id,
+                 fromId,
+                 toId,
+                 content,
+                 max(createdAt) as createdAt
+          from Message
+          where fromId = ${condition.user.id}
+             or toId = ${condition.user.id}
+          group by min(fromId, toId), max(fromId, toId)
+          order by createdAt
+      `;
+
+      const hasNextPage = messages.length > condition.first;
+      if (hasNextPage) {
+        messages = messages.slice(0, condition.first);
+      }
+
+      const userIds = _.flatten<number>(messages.map((m) => [m.fromId, m.toId])).filter((id) => id !== condition.user.id);
+      const users = await db.user.findByIds(prisma, userIds);
+
+      const result = messages.map((m) => {
+        if (m.fromId === m.toId && m.toId === condition.user.id) {
+          return {
+            fromUser: condition.user,
+            toUser: condition.user,
+            content: m.content,
+            createdAt: m.createdAt,
+          };
+        } else if (m.fromId === condition.user.id) {
+          return {
+            fromUser: condition.user,
+            toUser: users.find((user) => user.id === m.toId),
+            content: m.content,
+            createdAt: m.createdAt,
+          };
+        } else if (m.toId === condition.user.id) {
+          return {
+            fromUser: users.find((user) => user.id === m.fromId),
+            toUser: condition.user,
+            content: m.content,
+            createdAt: m.createdAt,
+          };
         }
       });
-    }
+
+      return {
+        items: result,
+        hasNextPage,
+      };
+    },
   },
 };
 
