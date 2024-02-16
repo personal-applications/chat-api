@@ -8,8 +8,8 @@ const db = {
           email: email,
           password: password,
           firstName: firstName,
-          lastName: lastName,
-        },
+          lastName: lastName
+        }
       });
     },
     updateInfo: (prisma: PrismaClient, email: string, info: Partial<Pick<User, "firstName" | "lastName" | "password">>) => {
@@ -36,10 +36,10 @@ const db = {
         data: {
           content,
           toId,
-          fromId,
-        },
+          fromId
+        }
       });
-    },
+    }
   },
 };
 
