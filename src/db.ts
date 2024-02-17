@@ -73,12 +73,11 @@ const db = {
                  content,
                  max(createdAt) as createdAt
           from Message
-          where fromId = ${condition.user.id}
-             or toId = ${condition.user.id}
+          where (fromId = ${condition.user.id} or toId = ${condition.user.id}) and id > ${condition.after ?? true}
           group by min(fromId, toId), max(fromId, toId)
           order by createdAt
+          limit ${condition.first + 1}
       `;
-
       const hasNextPage = messages.length > condition.first;
       if (hasNextPage) {
         messages = messages.slice(0, condition.first);
@@ -90,6 +89,7 @@ const db = {
       const result = messages.map((m) => {
         if (m.fromId === m.toId && m.toId === condition.user.id) {
           return {
+            id: m.id,
             fromUser: condition.user,
             toUser: condition.user,
             content: m.content,
@@ -97,6 +97,7 @@ const db = {
           };
         } else if (m.fromId === condition.user.id) {
           return {
+            id: m.id,
             fromUser: condition.user,
             toUser: users.find((user) => user.id === m.toId),
             content: m.content,
@@ -104,6 +105,7 @@ const db = {
           };
         } else if (m.toId === condition.user.id) {
           return {
+            id: m.id,
             fromUser: users.find((user) => user.id === m.fromId),
             toUser: condition.user,
             content: m.content,
