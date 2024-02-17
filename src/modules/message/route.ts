@@ -49,7 +49,75 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
       const message = await db.message.create(request.server.prisma, (request.user as User).id, request.body.content, request.body.toId);
       return response.status(StatusCodes.OK).send({ id: message.id });
-    }
+    },
+  );
+
+  server.get(
+    "/messages",
+    {
+      schema: {
+        tags: ["Message"],
+        querystring: {
+          type: "object",
+          properties: {
+            first: { type: "number", minimum: 0, default: 10 },
+            after: { type: "number", minimum: 0 },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "number",
+                    },
+                    fromUser: {
+                      type: "object",
+                      properties: {
+                        firstName: { type: "string" },
+                        lastName: { type: "string" },
+                      },
+                      required: ["firstName", "lastName"],
+                    },
+                    toUser: {
+                      type: "object",
+                      properties: {
+                        firstName: { type: "string" },
+                        lastName: { type: "string" },
+                      },
+                      required: ["firstName", "lastName"],
+                    },
+                    content: { type: "string" },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                  required: ["id", "fromUser", "toUser", "content", "createdAt"],
+                },
+              },
+              hasNextPage: {
+                type: "boolean",
+              },
+            },
+            required: ["items", "hasNextPage"],
+          },
+          ...authServerErrorDefs,
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+      },
+    },
+    async (request, response) => {
+      const user = request.user as User;
+      const result = await db.message.list(request.server.prisma, { ...request.query, user: user });
+      return response.status(StatusCodes.OK).send(result);
+    },
   );
 };
 

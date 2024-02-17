@@ -11,6 +11,7 @@ test("Message routes", async (t) => {
 
   const findByIdUserStub = Sinon.stub(db.user, "findById");
   const createMessageStub = Sinon.stub(db.message, "create");
+  const listMessagesStub = Sinon.stub(db.message, "list");
 
   t.beforeEach(() => {
     Sinon.reset();
@@ -81,6 +82,37 @@ test("Message routes", async (t) => {
 
       assert.equal(response.statusCode, StatusCodes.OK);
       assert.equal(response.json().id, 1);
+    });
+  });
+
+  await t.test("GET /messages", async (t) => {
+    await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
+    });
+
+    await t.test("Should return a list of messages", async (t) => {
+      listMessagesStub.resolves({
+        items: [],
+        hasNextPage: false,
+      });
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {},
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), { items: [], hasNextPage: false });
     });
   });
 });
