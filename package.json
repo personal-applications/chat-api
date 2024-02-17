@@ -27,7 +27,7 @@
     "@fastify/swagger-ui": "^2.1.0",
     "@fastify/type-provider-json-schema-to-ts": "^3.0.0",
     "@joggr/fastify-prisma": "^1.2.2",
-    "@prisma/client": "^5.8.1",
+    "@prisma/client": "^5.9.1",
     "bcrypt": "^5.1.1",
     "copyfiles": "^2.4.1",
     "dotenv-cli": "^7.3.0",
