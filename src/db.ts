@@ -1,6 +1,6 @@
 import { Message, PrismaClient, User } from "@prisma/client";
-import { CursorPaginationCondition, CursorPaginationResult } from "./pagination";
 import _ from "lodash";
+import { CursorPaginationCondition, CursorPaginationResult } from "./pagination";
 
 const db = {
   user: {
