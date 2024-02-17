@@ -73,6 +73,9 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
                 items: {
                   type: "object",
                   properties: {
+                    id: {
+                      type: "number",
+                    },
                     fromUser: {
                       type: "object",
                       properties: {
@@ -92,7 +95,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
                     content: { type: "string" },
                     createdAt: { type: "string", format: "date-time" },
                   },
-                  required: ["fromUser", "toUser", "content", "createdAt"],
+                  required: ["id", "fromUser", "toUser", "content", "createdAt"],
                 },
               },
               hasNextPage: {
