@@ -85,11 +85,11 @@ test("Message routes", async (t) => {
     });
   });
 
-  await t.test("GET /messages", async (t) => {
+  await t.test("GET /messages/conversations", async (t) => {
     await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
       const response = await app.inject({
         method: "GET",
-        url: "/messages",
+        url: "/messages/conversations",
         payload: {},
       });
 
@@ -104,7 +104,7 @@ test("Message routes", async (t) => {
 
       const response = await app.inject({
         method: "GET",
-        url: "/messages",
+        url: "/messages/conversations",
         query: {},
         headers: {
           authorization: `Bearer ${loginToken}`,

@@ -53,7 +53,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   );
 
   server.get(
-    "/messages",
+    "/messages/conversations",
     {
       schema: {
         tags: ["Message"],
