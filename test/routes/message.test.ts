@@ -16,69 +16,71 @@ test("Message routes", async (t) => {
     Sinon.reset();
   });
 
-  await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
-    const response = await app.inject({
-      method: "POST",
-      url: "/messages",
-      payload: {},
+  await t.test("POST /messages", async (t) => {
+    await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/messages",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
     });
 
-    assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
-  });
+    await t.test("Should throw validation errors if fields are not provided", async (t) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/messages",
+        payload: {},
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
 
-  await t.test("Should throw validation errors if fields are not provided", async (t) => {
-    const response = await app.inject({
-      method: "POST",
-      url: "/messages",
-      payload: {},
-      headers: {
-        authorization: `Bearer ${loginToken}`,
-      },
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "body must have required property 'content'");
     });
 
-    assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-    assert.equal(response.json().message, "body must have required property 'content'");
-  });
+    await t.test("Should throw error if send message to an unknown user", async () => {
+      findByIdUserStub.resolves(null);
 
-  await t.test("Should throw error if send message to an unknown user", async () => {
-    findByIdUserStub.resolves(null);
+      const response = await app.inject({
+        method: "POST",
+        url: "/messages",
+        payload: {
+          content: "content",
+          toId: 0,
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
 
-    const response = await app.inject({
-      method: "POST",
-      url: "/messages",
-      payload: {
-        content: "content",
-        toId: 0,
-      },
-      headers: {
-        authorization: `Bearer ${loginToken}`,
-      },
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(
+        response.json().message,
+        "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
+      );
+      assert.equal(findByIdUserStub.callCount, 1);
     });
 
-    assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-    assert.equal(
-      response.json().message,
-      "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again."
-    );
-    assert.equal(findByIdUserStub.callCount, 1);
-  });
+    await t.test("Should create message correctly", async () => {
+      createMessageStub.resolves({ id: 1 });
 
-  await t.test("Should create message correctly", async () => {
-    createMessageStub.resolves({ id: 1 });
+      const response = await app.inject({
+        method: "POST",
+        url: "/messages",
+        payload: {
+          content: "content",
+          toId: 1,
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
 
-    const response = await app.inject({
-      method: "POST",
-      url: "/messages",
-      payload: {
-        content: "content",
-        toId: 1,
-      },
-      headers: {
-        authorization: `Bearer ${loginToken}`,
-      },
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.equal(response.json().id, 1);
     });
-
-    assert.equal(response.statusCode, StatusCodes.OK);
-    assert.equal(response.json().id, 1);
   });
 });
