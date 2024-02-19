@@ -2,6 +2,7 @@ import { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts
 import { User } from "@prisma/client";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
+import _ from "lodash";
 import db from "../../db";
 import { authServerErrorDefs } from "../../plugins/swagger";
 
