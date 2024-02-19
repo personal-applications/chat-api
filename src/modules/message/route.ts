@@ -160,35 +160,6 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       });
     },
   );
-
-  server.get(
-    "/messages",
-    {
-      schema: {
-        tags: ["Message"],
-        querystring: {
-          type: "object",
-          properties: {
-            toId: {
-              type: "string",
-            },
-          },
-          required: ["toId"],
-        },
-        response: {
-          ...authServerErrorDefs,
-        },
-        security: [
-          {
-            bearerAuth: [],
-          },
-        ],
-      },
-    },
-    async (request, response) => {
-      const user = request.user as User;
-    },
-  );
 };
 
 export default messageRoutes;
