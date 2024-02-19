@@ -116,8 +116,77 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const user = request.user as User;
-      const result = await db.message.listConversations(request.server.prisma, { ...request.query, user: user });
-      return response.status(StatusCodes.OK).send(result);
+      let messages = await db.message.listConversations(request.server.prisma, { ...request.query, userId: user.id });
+
+      const hasNextPage = messages.length > request.query.first;
+      if (hasNextPage) {
+        messages = messages.slice(0, request.query.first);
+      }
+
+      const userIds = _.flatten<number>(messages.map((m) => [m.fromId, m.toId])).filter((id) => id !== user.id);
+      const users = await db.user.findByIds(request.server.prisma, userIds);
+
+      const result = messages.map((m) => {
+        if (m.fromId === m.toId && m.toId === user.id) {
+          return {
+            id: m.id,
+            fromUser: user,
+            toUser: user,
+            content: m.content,
+            createdAt: m.createdAt,
+          };
+        } else if (m.fromId === user.id) {
+          return {
+            id: m.id,
+            fromUser: user,
+            toUser: users.find((user) => user.id === m.toId),
+            content: m.content,
+            createdAt: m.createdAt,
+          };
+        } else if (m.toId === user.id) {
+          return {
+            id: m.id,
+            fromUser: users.find((user) => user.id === m.fromId),
+            toUser: user,
+            content: m.content,
+            createdAt: m.createdAt,
+          };
+        }
+      });
+
+      return response.status(StatusCodes.OK).send({
+        items: result,
+        hasNextPage,
+      });
+    },
+  );
+
+  server.get(
+    "/messages",
+    {
+      schema: {
+        tags: ["Message"],
+        querystring: {
+          type: "object",
+          properties: {
+            toId: {
+              type: "string",
+            },
+          },
+          required: ["toId"],
+        },
+        response: {
+          ...authServerErrorDefs,
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+      },
+    },
+    async (request, response) => {
+      const user = request.user as User;
     },
   );
 };
