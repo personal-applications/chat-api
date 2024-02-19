@@ -1,6 +1,6 @@
 import { Message, PrismaClient, User } from "@prisma/client";
 import _ from "lodash";
-import { CursorPaginationCondition, CursorPaginationResult } from "./pagination";
+import { CursorPaginationCondition } from "./pagination";
 
 const db = {
   user: {
@@ -60,10 +60,10 @@ const db = {
       condition: CursorPaginationCondition & {
         user: User;
       },
-    ): Promise<CursorPaginationResult<Message>> => {
+    ) => {
       /**
        * This query retrieves the most recent message for each unique combination of fromId and toId,
-       * ensuring that the specified user (with ID ${condition.userId}) is either the sender or receiver.
+       * ensuring that the specified user (with ID ${condition.user.id}) is either the sender or receiver.
        * The result is ordered by the latest timestamp
        */
       let messages: Message[] = await prisma.$queryRaw`
