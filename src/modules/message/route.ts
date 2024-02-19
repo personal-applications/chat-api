@@ -58,6 +58,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     {
       schema: {
         tags: ["Message"],
+        description: "Get all users who messages with current authenticated user.",
         querystring: {
           type: "object",
           properties: {

@@ -74,7 +74,7 @@ const db = {
           from Message
           where (fromId = ${condition.userId} or toId = ${condition.userId}) and id > ${condition.after ?? true}
           group by min(fromId, toId), max(fromId, toId)
-          order by createdAt
+          order by createdAt desc
           limit ${condition.first + 1}
       `;
 
