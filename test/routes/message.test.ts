@@ -97,10 +97,7 @@ test("Message routes", async (t) => {
     });
 
     await t.test("Should return a list of messages", async (t) => {
-      listConversationsStub.resolves({
-        items: [],
-        hasNextPage: false,
-      });
+      listConversationsStub.resolves([]);
 
       const response = await app.inject({
         method: "GET",
