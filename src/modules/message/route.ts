@@ -115,7 +115,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const user = request.user as User;
-      const result = await db.message.list(request.server.prisma, { ...request.query, user: user });
+      const result = await db.message.listConversations(request.server.prisma, { ...request.query, user: user });
       return response.status(StatusCodes.OK).send(result);
     },
   );

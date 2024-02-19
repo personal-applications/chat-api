@@ -11,7 +11,7 @@ test("Message routes", async (t) => {
 
   const findByIdUserStub = Sinon.stub(db.user, "findById");
   const createMessageStub = Sinon.stub(db.message, "create");
-  const listMessagesStub = Sinon.stub(db.message, "list");
+  const listConversationsStub = Sinon.stub(db.message, "listConversations");
 
   t.beforeEach(() => {
     Sinon.reset();
@@ -97,7 +97,7 @@ test("Message routes", async (t) => {
     });
 
     await t.test("Should return a list of messages", async (t) => {
-      listMessagesStub.resolves({
+      listConversationsStub.resolves({
         items: [],
         hasNextPage: false,
       });

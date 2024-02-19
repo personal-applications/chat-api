@@ -55,7 +55,7 @@ const db = {
         },
       });
     },
-    list: async (
+    listConversations: async (
       prisma: PrismaClient,
       condition: CursorPaginationCondition & {
         user: User;
