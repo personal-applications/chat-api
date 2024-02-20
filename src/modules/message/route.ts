@@ -95,7 +95,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
                       required: ["firstName", "lastName"],
                     },
                     content: { type: "string" },
-                    createdAt: { type: "string", format: "date-time" },
+                    createdAt: { type: "number" },
                   },
                   required: ["id", "fromUser", "toUser", "content", "createdAt"],
                 },
@@ -153,6 +153,90 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
             createdAt: m.createdAt,
           };
         }
+      });
+
+      return response.status(StatusCodes.OK).send({
+        items: result,
+        hasNextPage,
+      });
+    },
+  );
+
+  server.get(
+    "/messages",
+    {
+      schema: {
+        tags: ["Message"],
+        querystring: {
+          type: "object",
+          properties: {
+            toId: { type: "number", minimum: 0 },
+            first: { type: "number", minimum: 0, default: 10 },
+            after: { type: "number", minimum: 0 },
+          },
+          required: ["toId"],
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "number",
+                    },
+                    fromUser: {
+                      type: "object",
+                      properties: {
+                        firstName: { type: "string" },
+                        lastName: { type: "string" },
+                      },
+                      required: ["firstName", "lastName"],
+                    },
+                    toUser: {
+                      type: "object",
+                      properties: {
+                        firstName: { type: "string" },
+                        lastName: { type: "string" },
+                      },
+                      required: ["firstName", "lastName"],
+                    },
+                    content: { type: "string" },
+                    createdAt: { type: "number" },
+                  },
+                  required: ["id", "fromUser", "toUser", "content", "createdAt"],
+                },
+              },
+              hasNextPage: {
+                type: "boolean",
+              },
+            },
+            required: ["items", "hasNextPage"],
+          },
+          ...authServerErrorDefs,
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+      },
+    },
+    async (request, response) => {
+      const user = request.user as User;
+      const messages = await db.message.list(request.server.prisma, { ...request.query, userId: user.id });
+      const hasNextPage = messages.length > request.query.first;
+
+      const toUser = await db.user.findById(request.server.prisma, request.query.toId);
+      const result = messages.map((message) => {
+        const source = _.pick(message, ["id", "content", "createdAt"]);
+        return _.merge(source, {
+          toUser: _.pick(toUser, ["firstName", "lastName"]),
+          fromUser: _.pick(user, ["firstName", "lastName"]),
+        });
       });
 
       return response.status(StatusCodes.OK).send({

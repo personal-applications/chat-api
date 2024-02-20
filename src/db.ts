@@ -1,4 +1,4 @@
-import { Message, PrismaClient, User } from "@prisma/client";
+import { Message, Prisma, PrismaClient, User } from "@prisma/client";
 import { CursorPaginationCondition } from "./pagination";
 
 const db = {
@@ -79,6 +79,27 @@ const db = {
       `;
 
       return messages;
+    },
+    list: (prisma: PrismaClient, condition: CursorPaginationCondition & { userId: number; toId: number }): Promise<Message[]> => {
+      const where: Prisma.MessageWhereInput = {};
+      where.OR = [
+        {
+          fromId: condition.userId,
+          toId: condition.toId,
+        },
+        {
+          fromId: condition.toId,
+          toId: condition.userId,
+        },
+      ];
+
+      return prisma.message.findMany({
+        where: where,
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: condition.first + 1,
+      });
     },
   },
 };
