@@ -3,8 +3,9 @@ import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
 import db from "../../src/db";
-import { loginToken } from "../data";
+import { authenticatedUser, loginToken } from "../data";
 import { build } from "../helper";
+import { Message } from "@prisma/client";
 
 test("Message routes", async (t) => {
   const app = await build(t);
@@ -140,13 +141,31 @@ test("Message routes", async (t) => {
     });
 
     await t.test("Should return a list of messages", async (t) => {
-      listMessagesStub.resolves([]);
+      const data: Message[] = [
+        {
+          id: 1,
+          fromId: authenticatedUser.id,
+          toId: 2,
+          content: "Hello, how are you?",
+          createdAt: 1623456789,
+        },
+        {
+          id: 2,
+          fromId: 2,
+          toId: authenticatedUser.id,
+          content: "I'm doing well, thank you!",
+          createdAt: 1623456799,
+        },
+      ];
+      listMessagesStub.resolves(data);
+      findByIdUserStub.resolves({ id: 2, firstName: "John", lastName: "Doe" });
 
       const response = await app.inject({
         method: "GET",
         url: "/messages",
         query: {
           toId: "3",
+          first: "2",
         },
         headers: {
           authorization: `Bearer ${loginToken}`,
@@ -154,7 +173,37 @@ test("Message routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.OK);
-      assert.deepEqual(response.json(), { items: [], hasNextPage: false });
+      assert.deepEqual(response.json(), {
+        items: [
+          {
+            content: "Hello, how are you?",
+            createdAt: 1623456789,
+            fromUser: {
+              firstName: "firstName",
+              lastName: "lastName",
+            },
+            id: 1,
+            toUser: {
+              firstName: "John",
+              lastName: "Doe",
+            },
+          },
+          {
+            content: "I'm doing well, thank you!",
+            createdAt: 1623456799,
+            fromUser: {
+              firstName: "John",
+              lastName: "Doe",
+            },
+            id: 2,
+            toUser: {
+              firstName: "firstName",
+              lastName: "lastName",
+            },
+          },
+        ],
+        hasNextPage: false,
+      });
     });
   });
 });

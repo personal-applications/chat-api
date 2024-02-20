@@ -226,20 +226,33 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       },
     },
     async (request, response) => {
-      const user = request.user as User;
-      let messages = await db.message.list(request.server.prisma, { ...request.query, userId: user.id });
+      const currentUser = request.user as User;
+      let messages = await db.message.list(request.server.prisma, { ...request.query, userId: currentUser.id });
       const hasNextPage = messages.length > request.query.first;
       if (hasNextPage) {
         messages = messages.slice(0, request.query.first);
       }
 
-      const toUser = await db.user.findById(request.server.prisma, request.query.toId);
+      const recipientUser = await db.user.findById(request.server.prisma, request.query.toId);
+      const selectedFields = ["firstName", "lastName"];
       const result = messages.map((message) => {
-        const source = _.pick(message, ["id", "content", "createdAt"]);
-        return _.merge(source, {
-          toUser: _.pick(toUser, ["firstName", "lastName"]),
-          fromUser: _.pick(user, ["firstName", "lastName"]),
-        });
+        if (message.fromId === currentUser.id) {
+          return {
+            id: message.id,
+            content: message.content,
+            createdAt: message.createdAt,
+            fromUser: _.pick(currentUser, selectedFields),
+            toUser: _.pick(recipientUser, selectedFields),
+          };
+        }
+
+        return {
+          id: message.id,
+          content: message.content,
+          createdAt: message.createdAt,
+          fromUser: _.pick(recipientUser, selectedFields),
+          toUser: _.pick(currentUser, selectedFields),
+        };
       });
 
       return response.status(StatusCodes.OK).send({
