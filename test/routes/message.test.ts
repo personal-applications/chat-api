@@ -160,7 +160,7 @@ test("Message routes", async (t) => {
       listMessagesStub.resolves(data);
       findByIdUserStub.resolves({ id: 2, firstName: "John", lastName: "Doe" });
 
-      const response = await app.inject({
+      let response = await app.inject({
         method: "GET",
         url: "/messages",
         query: {
@@ -203,6 +203,38 @@ test("Message routes", async (t) => {
           },
         ],
         hasNextPage: false,
+      });
+
+      response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {
+          toId: "3",
+          first: "1",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), {
+        items: [
+          {
+            content: "Hello, how are you?",
+            createdAt: 1623456789,
+            fromUser: {
+              firstName: "firstName",
+              lastName: "lastName",
+            },
+            id: 1,
+            toUser: {
+              firstName: "John",
+              lastName: "Doe",
+            },
+          },
+        ],
+        hasNextPage: true,
       });
     });
   });
