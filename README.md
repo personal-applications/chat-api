@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/personal-applications/chat-api/graph/badge.svg?token=UH750NRY0Q)](https://codecov.io/gh/personal-applications/chat-api)
+
 # Getting Started with [Fastify-CLI](https://www.npmjs.com/package/fastify-cli)
 This project was bootstrapped with Fastify-CLI.
 
