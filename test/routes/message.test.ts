@@ -52,7 +52,7 @@ test("Message routes", async (t) => {
         url: "/messages",
         payload: {
           content: "content",
-          toId: 0,
+          receiverId: 0,
         },
         headers: {
           authorization: `Bearer ${loginToken}`,
@@ -75,7 +75,7 @@ test("Message routes", async (t) => {
         url: "/messages",
         payload: {
           content: "content",
-          toId: 1,
+          receiverId: 1,
         },
         headers: {
           authorization: `Bearer ${loginToken}`,
@@ -137,34 +137,35 @@ test("Message routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-      assert.equal(response.json().message, "querystring must have required property 'toId'");
+      assert.equal(response.json().message, "querystring must have required property 'receiverId'");
     });
 
     await t.test("Should return a list of messages", async (t) => {
+      const fakeUser = { id: 2, firstName: "John", lastName: "Doe" };
       const data: Message[] = [
         {
           id: 1,
-          fromId: authenticatedUser.id,
-          toId: 2,
+          senderId: authenticatedUser.id,
+          receiverId: fakeUser.id,
           content: "Hello, how are you?",
           createdAt: 1623456789,
         },
         {
           id: 2,
-          fromId: 2,
-          toId: authenticatedUser.id,
+          senderId: fakeUser.id,
+          receiverId: authenticatedUser.id,
           content: "I'm doing well, thank you!",
           createdAt: 1623456799,
         },
       ];
       listMessagesStub.resolves(data);
-      findByIdUserStub.resolves({ id: 2, firstName: "John", lastName: "Doe" });
+      findByIdUserStub.resolves(fakeUser);
 
       let response = await app.inject({
         method: "GET",
         url: "/messages",
         query: {
-          toId: "3",
+          receiverId: "3",
           first: "2",
         },
         headers: {
@@ -178,38 +179,36 @@ test("Message routes", async (t) => {
           {
             content: "Hello, how are you?",
             createdAt: 1623456789,
-            fromUser: {
-              firstName: "firstName",
-              lastName: "lastName",
+            sender: {
+              id: authenticatedUser.id,
+              firstName: authenticatedUser.firstName,
+              lastName: authenticatedUser.lastName,
             },
             id: 1,
-            toUser: {
-              firstName: "John",
-              lastName: "Doe",
-            },
+            receiver: fakeUser,
           },
           {
             content: "I'm doing well, thank you!",
             createdAt: 1623456799,
-            fromUser: {
-              firstName: "John",
-              lastName: "Doe",
-            },
+            sender: fakeUser,
             id: 2,
-            toUser: {
-              firstName: "firstName",
-              lastName: "lastName",
+            receiver: {
+              id: authenticatedUser.id,
+              firstName: authenticatedUser.firstName,
+              lastName: authenticatedUser.lastName,
             },
           },
         ],
         hasNextPage: false,
       });
+      assert.equal(findByIdUserStub.callCount, 1);
+      findByIdUserStub.resetHistory();
 
       response = await app.inject({
         method: "GET",
         url: "/messages",
         query: {
-          toId: "3",
+          receiverId: "3",
           first: "1",
         },
         headers: {
@@ -223,19 +222,34 @@ test("Message routes", async (t) => {
           {
             content: "Hello, how are you?",
             createdAt: 1623456789,
-            fromUser: {
-              firstName: "firstName",
-              lastName: "lastName",
+            sender: {
+              id: authenticatedUser.id,
+              firstName: authenticatedUser.firstName,
+              lastName: authenticatedUser.lastName,
             },
             id: 1,
-            toUser: {
-              firstName: "John",
-              lastName: "Doe",
-            },
+            receiver: fakeUser,
           },
         ],
         hasNextPage: true,
       });
+      assert.equal(findByIdUserStub.callCount, 1);
+      findByIdUserStub.resetHistory();
+
+      response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {
+          receiverId: authenticatedUser.id,
+          first: "1",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.equal(findByIdUserStub.callCount, 0);
     });
   });
 });

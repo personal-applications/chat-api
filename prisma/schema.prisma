@@ -30,11 +30,11 @@ model RemovedToken {
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  from      User     @relation(fields: [fromId], references: [id], name: "receivedMessages")
-  fromId    Int
-  to        User     @relation(fields: [toId], references: [id], name: "sentMessages")
-  toId      Int
-  content   String
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  sender     User     @relation(fields: [senderId], references: [id], name: "receivedMessages")
+  senderId   Int
+  receiver   User     @relation(fields: [receiverId], references: [id], name: "sentMessages")
+  receiverId Int
+  content    String
+  createdAt  DateTime @default(now())
 }
