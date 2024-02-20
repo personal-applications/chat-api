@@ -19,7 +19,7 @@ const db = {
     findByEmail: (prisma: PrismaClient, email: string) => {
       return prisma.user.findFirst({ where: { email } });
     },
-    findById: (prisma: PrismaClient, id: number) => {
+    findById: (prisma: PrismaClient, id: number): Promise<User> => {
       return prisma.user.findFirst({ where: { id } });
     },
     findByIds: (prisma: PrismaClient, ids: number[]): Promise<User[]> => {
@@ -45,19 +45,22 @@ const db = {
     },
   },
   message: {
-    create: (prisma: PrismaClient, fromId: number, content: string, toId: number) => {
+    create: (
+      prisma: PrismaClient,
+      data: {
+        senderId: number;
+        receiverId: number;
+        content: string;
+      },
+    ) => {
       return prisma.message.create({
-        data: {
-          content,
-          toId,
-          fromId,
-        },
+        data: data,
       });
     },
     listConversations: async (
       prisma: PrismaClient,
       condition: CursorPaginationCondition & {
-        userId: number;
+        senderId: number;
       },
     ) => {
       /**
@@ -67,29 +70,29 @@ const db = {
        */
       let messages: Message[] = await prisma.$queryRaw`
           select id,
-                 fromId,
-                 toId,
+                 senderId,
+                 receiverId,
                  content,
                  max(createdAt) as createdAt
           from Message
-          where (fromId = ${condition.userId} or toId = ${condition.userId}) and id > ${condition.after ?? true}
-          group by min(fromId, toId), max(fromId, toId)
+          where (senderId = ${condition.senderId} or receiverId = ${condition.senderId})and id > ${condition.after ?? true}
+          group by min(senderId, receiverId), max(senderId, receiverId)
           order by createdAt asc
           limit ${condition.first + 1}
       `;
 
       return messages;
     },
-    list: (prisma: PrismaClient, condition: CursorPaginationCondition & { userId: number; toId: number }): Promise<Message[]> => {
+    list: (prisma: PrismaClient, condition: CursorPaginationCondition & { senderId: number; receiverId: number }): Promise<Message[]> => {
       const where: Prisma.MessageWhereInput = {};
       where.OR = [
         {
-          fromId: condition.userId,
-          toId: condition.toId,
+          senderId: condition.senderId,
+          receiverId: condition.receiverId,
         },
         {
-          fromId: condition.toId,
-          toId: condition.userId,
+          senderId: condition.receiverId,
+          receiverId: condition.senderId,
         },
       ];
 

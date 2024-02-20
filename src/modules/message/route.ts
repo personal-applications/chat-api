@@ -18,9 +18,9 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           type: "object",
           properties: {
             content: { type: "string", minLength: 1 },
-            toId: { type: "number" },
+            receiverId: { type: "number" },
           },
-          required: ["content", "toId"],
+          required: ["content", "receiverId"],
         },
         response: {
           200: {
@@ -38,17 +38,21 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       },
     },
     async (request, response) => {
-      const user = request.user as User;
-      if (request.body.toId !== user.id) {
-        const toUser = await db.user.findById(request.server.prisma, request.body.toId);
-        if (!toUser) {
+      const currentUser = request.user as User;
+      if (request.body.receiverId !== currentUser.id) {
+        const receiver = await db.user.findById(request.server.prisma, request.body.receiverId);
+        if (!receiver) {
           return fastify.httpErrors.badRequest(
             "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
           );
         }
       }
 
-      const message = await db.message.create(request.server.prisma, (request.user as User).id, request.body.content, request.body.toId);
+      const message = await db.message.create(request.server.prisma, {
+        senderId: currentUser.id,
+        receiverId: request.body.receiverId,
+        content: request.body.content,
+      });
       return response.status(StatusCodes.OK).send({ id: message.id });
     },
   );
@@ -78,136 +82,28 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
                     id: {
                       type: "number",
                     },
-                    fromUser: {
+                    sender: {
                       type: "object",
                       properties: {
+                        id: { type: "number" },
                         firstName: { type: "string" },
                         lastName: { type: "string" },
                       },
-                      required: ["firstName", "lastName"],
+                      required: ["id", "firstName", "lastName"],
                     },
-                    toUser: {
+                    receiver: {
                       type: "object",
                       properties: {
+                        id: { type: "number" },
                         firstName: { type: "string" },
                         lastName: { type: "string" },
                       },
-                      required: ["firstName", "lastName"],
+                      required: ["id", "firstName", "lastName"],
                     },
                     content: { type: "string" },
                     createdAt: { type: "number" },
                   },
-                  required: ["id", "fromUser", "toUser", "content", "createdAt"],
-                },
-              },
-              hasNextPage: {
-                type: "boolean",
-              },
-            },
-            required: ["items", "hasNextPage"],
-          },
-          ...authServerErrorDefs,
-        },
-        security: [
-          {
-            bearerAuth: [],
-          },
-        ],
-      },
-    },
-    async (request, response) => {
-      const user = request.user as User;
-      let messages = await db.message.listConversations(request.server.prisma, { ...request.query, userId: user.id });
-
-      const hasNextPage = messages.length > request.query.first;
-      if (hasNextPage) {
-        messages = messages.slice(0, request.query.first);
-      }
-
-      const userIds = _.flatten<number>(messages.map((m) => [m.fromId, m.toId])).filter((id) => id !== user.id);
-      const users = await db.user.findByIds(request.server.prisma, userIds);
-
-      const result = messages.map((m) => {
-        if (m.fromId === m.toId && m.toId === user.id) {
-          return {
-            id: m.id,
-            fromUser: user,
-            toUser: user,
-            content: m.content,
-            createdAt: m.createdAt,
-          };
-        } else if (m.fromId === user.id) {
-          return {
-            id: m.id,
-            fromUser: user,
-            toUser: users.find((user) => user.id === m.toId),
-            content: m.content,
-            createdAt: m.createdAt,
-          };
-        } else if (m.toId === user.id) {
-          return {
-            id: m.id,
-            fromUser: users.find((user) => user.id === m.fromId),
-            toUser: user,
-            content: m.content,
-            createdAt: m.createdAt,
-          };
-        }
-      });
-
-      return response.status(StatusCodes.OK).send({
-        items: result,
-        hasNextPage,
-      });
-    },
-  );
-
-  server.get(
-    "/messages",
-    {
-      schema: {
-        tags: ["Message"],
-        querystring: {
-          type: "object",
-          properties: {
-            toId: { type: "number", minimum: 0 },
-            first: { type: "number", minimum: 0, default: 10 },
-            after: { type: "number", minimum: 0 },
-          },
-          required: ["toId"],
-        },
-        response: {
-          200: {
-            type: "object",
-            properties: {
-              items: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "number",
-                    },
-                    fromUser: {
-                      type: "object",
-                      properties: {
-                        firstName: { type: "string" },
-                        lastName: { type: "string" },
-                      },
-                      required: ["firstName", "lastName"],
-                    },
-                    toUser: {
-                      type: "object",
-                      properties: {
-                        firstName: { type: "string" },
-                        lastName: { type: "string" },
-                      },
-                      required: ["firstName", "lastName"],
-                    },
-                    content: { type: "string" },
-                    createdAt: { type: "number" },
-                  },
-                  required: ["id", "fromUser", "toUser", "content", "createdAt"],
+                  required: ["id", "sender", "receiver", "content", "createdAt"],
                 },
               },
               hasNextPage: {
@@ -227,31 +123,133 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const currentUser = request.user as User;
-      let messages = await db.message.list(request.server.prisma, { ...request.query, userId: currentUser.id });
+      let messages = await db.message.listConversations(request.server.prisma, {
+        ...request.query,
+        senderId: currentUser.id,
+      });
+
       const hasNextPage = messages.length > request.query.first;
       if (hasNextPage) {
         messages = messages.slice(0, request.query.first);
       }
 
-      const recipientUser = await db.user.findById(request.server.prisma, request.query.toId);
-      const selectedFields = ["firstName", "lastName"];
-      const result = messages.map((message) => {
-        if (message.fromId === currentUser.id) {
-          return {
-            id: message.id,
-            content: message.content,
-            createdAt: message.createdAt,
-            fromUser: _.pick(currentUser, selectedFields),
-            toUser: _.pick(recipientUser, selectedFields),
-          };
-        }
+      const userIds = _.flatten<number>(messages.map((m) => [m.senderId, m.receiverId])).filter((id) => id !== currentUser.id);
+      const users = await db.user.findByIds(request.server.prisma, userIds);
 
+      const result = messages.map((m) => {
+        return {
+          id: m.id,
+          content: m.content,
+          createdAt: m.createdAt,
+          sender: users.find((user) => user.id === m.senderId) ?? currentUser,
+          receiver: users.find((user) => user.id === m.receiverId) ?? currentUser,
+        };
+      });
+
+      return response.status(StatusCodes.OK).send({
+        items: result,
+        hasNextPage,
+      });
+    },
+  );
+
+  server.get(
+    "/messages",
+    {
+      schema: {
+        tags: ["Message"],
+        querystring: {
+          type: "object",
+          properties: {
+            receiverId: { type: "number", minimum: 0 },
+            first: { type: "number", minimum: 0, default: 10 },
+            after: { type: "number", minimum: 0 },
+          },
+          required: ["receiverId"],
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "number",
+                    },
+                    sender: {
+                      type: "object",
+                      properties: {
+                        id: { type: "number" },
+                        firstName: { type: "string" },
+                        lastName: { type: "string" },
+                      },
+                      required: ["id", "firstName", "lastName"],
+                    },
+                    receiver: {
+                      type: "object",
+                      properties: {
+                        id: { type: "number" },
+                        firstName: { type: "string" },
+                        lastName: { type: "string" },
+                      },
+                      required: ["id", "firstName", "lastName"],
+                    },
+                    content: { type: "string" },
+                    createdAt: { type: "number" },
+                  },
+                  required: ["id", "sender", "receiver", "content", "createdAt"],
+                },
+              },
+              hasNextPage: {
+                type: "boolean",
+              },
+            },
+            required: ["items", "hasNextPage"],
+          },
+          ...authServerErrorDefs,
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+      },
+    },
+    async (request, response) => {
+      const sender = request.user as User;
+      let messages = await db.message.list(request.server.prisma, { ...request.query, senderId: sender.id });
+      const hasNextPage = messages.length > request.query.first;
+      if (hasNextPage) {
+        messages = messages.slice(0, request.query.first);
+      }
+
+      const selectedFields = ["id", "firstName", "lastName"];
+      if (request.query.receiverId === sender.id) {
+        return {
+          items: messages.map((m) => {
+            return {
+              id: m.id,
+              content: m.content,
+              createdAt: m.createdAt,
+              sender: _.pick(sender, selectedFields),
+              receiver: _.pick(sender, selectedFields),
+            };
+          }),
+          hasNextPage,
+        };
+      }
+
+      const receiver = await db.user.findById(request.server.prisma, request.query.receiverId);
+      const result = messages.map((message) => {
         return {
           id: message.id,
           content: message.content,
           createdAt: message.createdAt,
-          fromUser: _.pick(recipientUser, selectedFields),
-          toUser: _.pick(currentUser, selectedFields),
+          sender: receiver.id === message.senderId ? _.pick(receiver, selectedFields) : _.pick(sender, selectedFields),
+          receiver: receiver.id === message.receiverId ? _.pick(receiver, selectedFields) : _.pick(sender, selectedFields),
         };
       });
 
