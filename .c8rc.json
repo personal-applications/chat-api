@@ -1,0 +1,7 @@
+{
+  "reporter": [
+    "text",
+    "text-summary",
+    "cobertura"
+  ]
+}

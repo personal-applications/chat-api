@@ -3,8 +3,9 @@ import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
 import db from "../../src/db";
-import { loginToken } from "../data";
+import { authenticatedUser, loginToken } from "../data";
 import { build } from "../helper";
+import { Message } from "@prisma/client";
 
 test("Message routes", async (t) => {
   const app = await build(t);
@@ -12,6 +13,7 @@ test("Message routes", async (t) => {
   const findByIdUserStub = Sinon.stub(db.user, "findById");
   const createMessageStub = Sinon.stub(db.message, "create");
   const listConversationsStub = Sinon.stub(db.message, "listConversations");
+  const listMessagesStub = Sinon.stub(db.message, "list");
 
   t.beforeEach(() => {
     Sinon.reset();
@@ -110,6 +112,130 @@ test("Message routes", async (t) => {
 
       assert.equal(response.statusCode, StatusCodes.OK);
       assert.deepEqual(response.json(), { items: [], hasNextPage: false });
+    });
+  });
+
+  await t.test("GET /messages", async (t) => {
+    await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
+    });
+
+    await t.test("Should throw validation errors if fields are not provided", async (t) => {
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        payload: {},
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "querystring must have required property 'toId'");
+    });
+
+    await t.test("Should return a list of messages", async (t) => {
+      const data: Message[] = [
+        {
+          id: 1,
+          fromId: authenticatedUser.id,
+          toId: 2,
+          content: "Hello, how are you?",
+          createdAt: 1623456789,
+        },
+        {
+          id: 2,
+          fromId: 2,
+          toId: authenticatedUser.id,
+          content: "I'm doing well, thank you!",
+          createdAt: 1623456799,
+        },
+      ];
+      listMessagesStub.resolves(data);
+      findByIdUserStub.resolves({ id: 2, firstName: "John", lastName: "Doe" });
+
+      let response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {
+          toId: "3",
+          first: "2",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), {
+        items: [
+          {
+            content: "Hello, how are you?",
+            createdAt: 1623456789,
+            fromUser: {
+              firstName: "firstName",
+              lastName: "lastName",
+            },
+            id: 1,
+            toUser: {
+              firstName: "John",
+              lastName: "Doe",
+            },
+          },
+          {
+            content: "I'm doing well, thank you!",
+            createdAt: 1623456799,
+            fromUser: {
+              firstName: "John",
+              lastName: "Doe",
+            },
+            id: 2,
+            toUser: {
+              firstName: "firstName",
+              lastName: "lastName",
+            },
+          },
+        ],
+        hasNextPage: false,
+      });
+
+      response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {
+          toId: "3",
+          first: "1",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), {
+        items: [
+          {
+            content: "Hello, how are you?",
+            createdAt: 1623456789,
+            fromUser: {
+              firstName: "firstName",
+              lastName: "lastName",
+            },
+            id: 1,
+            toUser: {
+              firstName: "John",
+              lastName: "Doe",
+            },
+          },
+        ],
+        hasNextPage: true,
+      });
     });
   });
 });
