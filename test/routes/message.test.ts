@@ -201,6 +201,8 @@ test("Message routes", async (t) => {
         ],
         hasNextPage: false,
       });
+      assert.equal(findByIdUserStub.callCount, 1);
+      findByIdUserStub.resetHistory();
 
       response = await app.inject({
         method: "GET",
@@ -231,6 +233,23 @@ test("Message routes", async (t) => {
         ],
         hasNextPage: true,
       });
+      assert.equal(findByIdUserStub.callCount, 1);
+      findByIdUserStub.resetHistory();
+
+      response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {
+          receiverId: authenticatedUser.id,
+          first: "1",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.equal(findByIdUserStub.callCount, 0);
     });
   });
 });
