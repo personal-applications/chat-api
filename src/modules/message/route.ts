@@ -227,8 +227,11 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const user = request.user as User;
-      const messages = await db.message.list(request.server.prisma, { ...request.query, userId: user.id });
+      let messages = await db.message.list(request.server.prisma, { ...request.query, userId: user.id });
       const hasNextPage = messages.length > request.query.first;
+      if (hasNextPage) {
+        messages = messages.slice(0, request.query.first);
+      }
 
       const toUser = await db.user.findById(request.server.prisma, request.query.toId);
       const result = messages.map((message) => {

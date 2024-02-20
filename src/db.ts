@@ -74,7 +74,7 @@ const db = {
           from Message
           where (fromId = ${condition.userId} or toId = ${condition.userId}) and id > ${condition.after ?? true}
           group by min(fromId, toId), max(fromId, toId)
-          order by createdAt desc
+          order by createdAt asc
           limit ${condition.first + 1}
       `;
 
@@ -93,10 +93,14 @@ const db = {
         },
       ];
 
+      if (condition.after) {
+        where.id = { gt: condition.after };
+      }
+
       return prisma.message.findMany({
         where: where,
         orderBy: {
-          createdAt: "desc",
+          createdAt: "asc",
         },
         take: condition.first + 1,
       });
