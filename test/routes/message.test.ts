@@ -12,6 +12,7 @@ test("Message routes", async (t) => {
   const findByIdUserStub = Sinon.stub(db.user, "findById");
   const createMessageStub = Sinon.stub(db.message, "create");
   const listConversationsStub = Sinon.stub(db.message, "listConversations");
+  const listMessagesStub = Sinon.stub(db.message, "list");
 
   t.beforeEach(() => {
     Sinon.reset();
@@ -103,6 +104,50 @@ test("Message routes", async (t) => {
         method: "GET",
         url: "/messages/conversations",
         query: {},
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), { items: [], hasNextPage: false });
+    });
+  });
+
+  await t.test("GET /messages", async (t) => {
+    await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        payload: {},
+      });
+
+      assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
+    });
+
+    await t.test("Should throw validation errors if fields are not provided", async (t) => {
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        payload: {},
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
+      assert.equal(response.json().message, "querystring must have required property 'toId'");
+    });
+
+    await t.test("Should return a list of messages", async (t) => {
+      listMessagesStub.resolves([]);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages",
+        query: {
+          toId: "3",
+        },
         headers: {
           authorization: `Bearer ${loginToken}`,
         },
