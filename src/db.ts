@@ -78,13 +78,13 @@ const db = {
           where (senderId = ${condition.senderId} or receiverId = ${condition.senderId})
             and #cursorCondition
           group by min(senderId, receiverId), max(senderId, receiverId)
-          order by createdAt #sortCondition
+          order by createdAt desc
           limit ${condition.limit + 1}
       `;
-      if (condition.after) {
-        query = query.replace("#cursorCondition", `id > ${condition.after ?? true}`).replace("#sortCondition", "asc");
-      } else if (condition.before) {
-        query = query.replace("#cursorCondition", `id < ${condition.after ?? true}`).replace("#sortCondition", "desc");
+      if (condition.before) {
+        query = query.replace("#cursorCondition", `id < ${condition.after ?? true}`);
+      } else {
+        query = query.replace("#cursorCondition", "true");
       }
 
       return prisma.$queryRawUnsafe<Message[]>(query);
@@ -108,14 +108,14 @@ const db = {
         },
       ];
 
-      if (condition.after) {
-        where.id = { gt: condition.after };
+      if (condition.before) {
+        where.id = { lt: condition.before };
       }
 
       return prisma.message.findMany({
         where: where,
         orderBy: {
-          createdAt: "asc",
+          createdAt: "desc",
         },
         take: condition.limit + 1,
       });
