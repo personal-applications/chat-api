@@ -5,6 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
 import db from "../../db";
 import { authServerErrorDefs } from "../../plugins/swagger";
+import { cursorPaginationDefs } from "../../pagination";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -66,8 +67,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         querystring: {
           type: "object",
           properties: {
-            first: { type: "number", minimum: 0, default: 10 },
-            after: { type: "number", minimum: 0 },
+            ...cursorPaginationDefs,
           },
         },
         response: {
@@ -162,8 +162,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           type: "object",
           properties: {
             receiverId: { type: "number", minimum: 0 },
-            first: { type: "number", minimum: 0, default: 10 },
-            after: { type: "number", minimum: 0 },
+            ...cursorPaginationDefs,
           },
           required: ["receiverId"],
         },
