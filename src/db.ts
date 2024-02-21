@@ -62,28 +62,39 @@ const db = {
       condition: CursorPaginationCondition & {
         senderId: number;
       },
-    ) => {
+    ): Promise<Message[]> => {
       /**
        * This query retrieves the most recent message for each unique combination of fromId and toId,
        * ensuring that the specified user (with ID ${condition.userId}) is either the sender or receiver.
        * The result is ordered by the latest timestamp
        */
-      let messages: Message[] = await prisma.$queryRaw`
+      let query = `
           select id,
                  senderId,
                  receiverId,
                  content,
                  max(createdAt) as createdAt
           from Message
-          where (senderId = ${condition.senderId} or receiverId = ${condition.senderId})and id > ${condition.after ?? true}
+          where (senderId = ${condition.senderId} or receiverId = ${condition.senderId}) and #cursorCondition
           group by min(senderId, receiverId), max(senderId, receiverId)
           order by createdAt asc
-          limit ${condition.first + 1}
+          limit ${condition.limit + 1}
       `;
+      if (condition.after) {
+        query = query.replace("#cursorCondition", `id > ${condition.after ?? true}`);
+      } else if (condition.before) {
+        query = query.replace("#cursorCondition", `id < ${condition.after ?? true}`);
+      }
 
-      return messages;
+      return prisma.$queryRawUnsafe<Message[]>(query);
     },
-    list: (prisma: PrismaClient, condition: CursorPaginationCondition & { senderId: number; receiverId: number }): Promise<Message[]> => {
+    list: (
+      prisma: PrismaClient,
+      condition: CursorPaginationCondition & {
+        senderId: number;
+        receiverId: number;
+      },
+    ): Promise<Message[]> => {
       const where: Prisma.MessageWhereInput = {};
       where.OR = [
         {
@@ -105,7 +116,7 @@ const db = {
         orderBy: {
           createdAt: "asc",
         },
-        take: condition.first + 1,
+        take: condition.limit + 1,
       });
     },
   },

@@ -5,7 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
 import db from "../../db";
 import { authServerErrorDefs } from "../../plugins/swagger";
-import { cursorPaginationDefs } from "../../pagination";
+import { cursorPaginationDefs, extractCursorPaginationCondition } from "../../pagination";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -122,13 +122,14 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       },
     },
     async (request, response) => {
+      const pagingCondition = extractCursorPaginationCondition(request.query);
       const currentUser = request.user as User;
       let messages = await db.message.listConversations(request.server.prisma, {
-        ...request.query,
+        ...pagingCondition,
         senderId: currentUser.id,
       });
 
-      const hasNextPage = messages.length > request.query.first;
+      const hasNextPage = messages.length > pagingCondition.limit;
       if (hasNextPage) {
         messages = messages.slice(0, request.query.first);
       }
@@ -218,9 +219,14 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       },
     },
     async (request, response) => {
+      const pagingCondition = extractCursorPaginationCondition(request.query);
       const sender = request.user as User;
-      let messages = await db.message.list(request.server.prisma, { ...request.query, senderId: sender.id });
-      const hasNextPage = messages.length > request.query.first;
+      let messages = await db.message.list(request.server.prisma, {
+        ...pagingCondition,
+        senderId: sender.id,
+        receiverId: request.query.receiverId,
+      });
+      const hasNextPage = messages.length > pagingCondition.limit;
       if (hasNextPage) {
         messages = messages.slice(0, request.query.first);
       }
