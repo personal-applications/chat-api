@@ -4,14 +4,14 @@ import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
 import db from "../../src/db";
+import userQueries from "../../src/modules/db/user";
 import { authenticatedUser, loginToken } from "../data";
 import { build } from "../helper";
 
 test("Message routes", async (t) => {
   const app = await build(t);
 
-  const findByIdUserStub = Sinon.stub(db.user, "findById");
-  const findByIdsUserStub = Sinon.stub(db.user, "findByIds");
+  const userQueriesStub = Sinon.stub(userQueries);
   const createMessageStub = Sinon.stub(db.message, "create");
   const listConversationsStub = Sinon.stub(db.message, "listConversations");
   const listMessagesStub = Sinon.stub(db.message, "list");
@@ -46,7 +46,7 @@ test("Message routes", async (t) => {
     });
 
     await t.test("Should throw error if send message to an unknown user", async () => {
-      findByIdUserStub.resolves(null);
+      userQueriesStub.findFirst.resolves(null);
 
       const response = await app.inject({
         method: "POST",
@@ -65,7 +65,7 @@ test("Message routes", async (t) => {
         response.json().message,
         "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
       );
-      assert.equal(findByIdUserStub.callCount, 1);
+      assert(userQueriesStub.findFirst.calledOnce);
     });
 
     await t.test("Should create message correctly", async () => {
@@ -143,7 +143,7 @@ test("Message routes", async (t) => {
           createdAt: 1645343100,
         },
       ]);
-      findByIdsUserStub.resolves([secondUser, thirdUser]);
+      userQueriesStub.findMany.resolves([secondUser, thirdUser]);
 
       const response = await app.inject({
         method: "GET",
@@ -247,7 +247,7 @@ test("Message routes", async (t) => {
             createdAt: 1645343100,
           },
         ]);
-        findByIdUserStub.resolves(otherUser);
+        userQueriesStub.findFirst.resolves(otherUser);
 
         const response = await app.inject({
           method: "GET",

@@ -6,6 +6,7 @@ import _ from "lodash";
 import db from "../../db";
 import { cursorPaginationDefs } from "../../pagination";
 import { authServerErrorDefs } from "../../plugins/swagger";
+import userQueries from "../db/user";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
@@ -41,7 +42,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     async (request, response) => {
       const currentUser = request.user as User;
       if (request.body.receiverId !== currentUser.id) {
-        const receiver = await db.user.findById(request.server.prisma, request.body.receiverId);
+        const receiver = await userQueries.findFirst(request.server.prisma, { id: request.body.receiverId });
         if (!receiver) {
           return fastify.httpErrors.badRequest(
             "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
@@ -134,7 +135,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       const userIds = _.flatten<number>(messages.map((m) => [m.senderId, m.receiverId])).filter((id) => id !== currentUser.id);
-      const users = await db.user.findByIds(request.server.prisma, userIds);
+      const users: User[] = await userQueries.findMany(request.server.prisma, { id: { in: userIds } }, { id: true, firstName: true, lastName: true });
 
       const result = messages.map((m) => {
         return {
@@ -247,7 +248,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         };
       }
 
-      const receiver = await db.user.findById(request.server.prisma, request.query.receiverId);
+      const receiver = await userQueries.findFirst(request.server.prisma, { id: request.query.receiverId });
       const result = messages.map((message) => {
         return {
           id: message.id,
