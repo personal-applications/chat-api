@@ -218,6 +218,52 @@ test("Message routes", async (t) => {
           ],
         });
       });
+
+      await t.test("Should not call db when getting messages for same user", async () => {
+        listMessagesStub.resolves([
+          {
+            id: 1,
+            senderId: authenticatedUser.id,
+            receiverId: authenticatedUser.id,
+            content: "Hello, how are you?",
+            createdAt: 1645342800,
+          },
+        ]);
+
+        const response = await app.inject({
+          method: "GET",
+          url: "/messages",
+          query: {
+            receiverId: authenticatedUser.id,
+            limit: "1",
+          },
+          headers: {
+            authorization: `Bearer ${loginToken}`,
+          },
+        });
+
+        assert.equal(response.statusCode, StatusCodes.OK);
+        assert.deepEqual(response.json(), {
+          hasPreviousPage: false,
+          items: [
+            {
+              content: "Hello, how are you?",
+              createdAt: 1645342800,
+              id: 1,
+              receiver: {
+                firstName: "firstName",
+                id: 1,
+                lastName: "lastName",
+              },
+              sender: {
+                firstName: "firstName",
+                id: 1,
+                lastName: "lastName",
+              },
+            },
+          ],
+        });
+      });
     });
   });
 });
