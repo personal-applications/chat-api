@@ -1,3 +1,4 @@
+import { User } from "@prisma/client";
 import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import test from "node:test";
@@ -5,12 +6,12 @@ import Sinon from "sinon";
 import db from "../../src/db";
 import { authenticatedUser, loginToken } from "../data";
 import { build } from "../helper";
-import { Message } from "@prisma/client";
 
 test("Message routes", async (t) => {
   const app = await build(t);
 
   const findByIdUserStub = Sinon.stub(db.user, "findById");
+  const findByIdsUserStub = Sinon.stub(db.user, "findByIds");
   const createMessageStub = Sinon.stub(db.message, "create");
   const listConversationsStub = Sinon.stub(db.message, "listConversations");
   const listMessagesStub = Sinon.stub(db.message, "list");
@@ -98,7 +99,7 @@ test("Message routes", async (t) => {
       assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
     });
 
-    await t.test("Should return a list of messages", async (t) => {
+    await t.test("Should return a list of messages without condition correctly", async () => {
       listConversationsStub.resolves([]);
 
       const response = await app.inject({
@@ -111,7 +112,71 @@ test("Message routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.OK);
-      assert.deepEqual(response.json(), { items: [], hasNextPage: false });
+      assert.deepEqual(response.json(), { items: [], hasPreviousPage: false });
+    });
+
+    await t.test("Should return a list of messages with limit correctly", async () => {
+      const secondUser: User = {
+        id: 2,
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const thirdUser: User = {
+        id: 3,
+        firstName: "John",
+        lastName: "Doe",
+      };
+
+      listConversationsStub.resolves([
+        {
+          id: 1,
+          senderId: secondUser.id,
+          receiverId: authenticatedUser.id,
+          content: "Hello, how are you?",
+          createdAt: 1645342800,
+        },
+        {
+          id: 2,
+          senderId: authenticatedUser.id,
+          receiverId: thirdUser.id,
+          content: "I'm doing well, thank you!",
+          createdAt: 1645343100,
+        },
+      ]);
+      findByIdsUserStub.resolves([secondUser, thirdUser]);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages/conversations",
+        query: {
+          limit: "1",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), {
+        hasPreviousPage: true,
+        items: [
+          {
+            content: "Hello, how are you?",
+            createdAt: 1645342800,
+            id: 1,
+            receiver: {
+              firstName: "firstName",
+              id: 1,
+              lastName: "lastName",
+            },
+            sender: {
+              firstName: "John",
+              id: 2,
+              lastName: "Doe",
+            },
+          },
+        ],
+      });
     });
   });
 
@@ -140,116 +205,130 @@ test("Message routes", async (t) => {
       assert.equal(response.json().message, "querystring must have required property 'receiverId'");
     });
 
-    await t.test("Should return a list of messages", async (t) => {
-      const fakeUser = { id: 2, firstName: "John", lastName: "Doe" };
-      const data: Message[] = [
-        {
-          id: 1,
-          senderId: authenticatedUser.id,
-          receiverId: fakeUser.id,
-          content: "Hello, how are you?",
-          createdAt: 1623456789,
-        },
-        {
+    await t.test("Should return a list of messages correctly", async (t) => {
+      await t.test("Should return a list without any condition correctly", async () => {
+        listMessagesStub.resolves([]);
+
+        const response = await app.inject({
+          method: "GET",
+          url: "/messages",
+          query: {
+            receiverId: "1",
+          },
+          headers: {
+            authorization: `Bearer ${loginToken}`,
+          },
+        });
+
+        assert.equal(response.statusCode, StatusCodes.OK);
+        assert.deepEqual(response.json(), { items: [], hasPreviousPage: false });
+      });
+
+      await t.test("Should return a list with limit correctly", async () => {
+        const otherUser: User = {
           id: 2,
-          senderId: fakeUser.id,
-          receiverId: authenticatedUser.id,
-          content: "I'm doing well, thank you!",
-          createdAt: 1623456799,
-        },
-      ];
-      listMessagesStub.resolves(data);
-      findByIdUserStub.resolves(fakeUser);
+          firstName: "John",
+          lastName: "Doe",
+        };
 
-      let response = await app.inject({
-        method: "GET",
-        url: "/messages",
-        query: {
-          receiverId: "3",
-          first: "2",
-        },
-        headers: {
-          authorization: `Bearer ${loginToken}`,
-        },
-      });
-
-      assert.equal(response.statusCode, StatusCodes.OK);
-      assert.deepEqual(response.json(), {
-        items: [
+        listMessagesStub.resolves([
           {
-            content: "Hello, how are you?",
-            createdAt: 1623456789,
-            sender: {
-              id: authenticatedUser.id,
-              firstName: authenticatedUser.firstName,
-              lastName: authenticatedUser.lastName,
-            },
             id: 1,
-            receiver: fakeUser,
+            senderId: otherUser.id,
+            receiverId: authenticatedUser.id,
+            content: "Hello, how are you?",
+            createdAt: 1645342800,
           },
           {
-            content: "I'm doing well, thank you!",
-            createdAt: 1623456799,
-            sender: fakeUser,
             id: 2,
-            receiver: {
-              id: authenticatedUser.id,
-              firstName: authenticatedUser.firstName,
-              lastName: authenticatedUser.lastName,
-            },
+            senderId: authenticatedUser.id,
+            receiverId: otherUser.id,
+            content: "I'm doing well, thank you!",
+            createdAt: 1645343100,
           },
-        ],
-        hasNextPage: false,
-      });
-      assert.equal(findByIdUserStub.callCount, 1);
-      findByIdUserStub.resetHistory();
+        ]);
+        findByIdUserStub.resolves(otherUser);
 
-      response = await app.inject({
-        method: "GET",
-        url: "/messages",
-        query: {
-          receiverId: "3",
-          first: "1",
-        },
-        headers: {
-          authorization: `Bearer ${loginToken}`,
-        },
+        const response = await app.inject({
+          method: "GET",
+          url: "/messages",
+          query: {
+            receiverId: otherUser.id,
+            limit: "1",
+          },
+          headers: {
+            authorization: `Bearer ${loginToken}`,
+          },
+        });
+
+        assert.equal(response.statusCode, StatusCodes.OK);
+        assert.deepEqual(response.json(), {
+          hasPreviousPage: true,
+          items: [
+            {
+              content: "Hello, how are you?",
+              createdAt: 1645342800,
+              id: 1,
+              receiver: {
+                firstName: "firstName",
+                id: 1,
+                lastName: "lastName",
+              },
+              sender: {
+                firstName: "John",
+                id: 2,
+                lastName: "Doe",
+              },
+            },
+          ],
+        });
       });
 
-      assert.equal(response.statusCode, StatusCodes.OK);
-      assert.deepEqual(response.json(), {
-        items: [
+      await t.test("Should not call db when getting messages for same user", async () => {
+        listMessagesStub.resolves([
           {
-            content: "Hello, how are you?",
-            createdAt: 1623456789,
-            sender: {
-              id: authenticatedUser.id,
-              firstName: authenticatedUser.firstName,
-              lastName: authenticatedUser.lastName,
-            },
             id: 1,
-            receiver: fakeUser,
+            senderId: authenticatedUser.id,
+            receiverId: authenticatedUser.id,
+            content: "Hello, how are you?",
+            createdAt: 1645342800,
           },
-        ],
-        hasNextPage: true,
-      });
-      assert.equal(findByIdUserStub.callCount, 1);
-      findByIdUserStub.resetHistory();
+        ]);
 
-      response = await app.inject({
-        method: "GET",
-        url: "/messages",
-        query: {
-          receiverId: authenticatedUser.id,
-          first: "1",
-        },
-        headers: {
-          authorization: `Bearer ${loginToken}`,
-        },
-      });
+        const response = await app.inject({
+          method: "GET",
+          url: "/messages",
+          query: {
+            receiverId: authenticatedUser.id,
+            limit: "1",
+          },
+          headers: {
+            authorization: `Bearer ${loginToken}`,
+          },
+        });
 
-      assert.equal(response.statusCode, StatusCodes.OK);
-      assert.equal(findByIdUserStub.callCount, 0);
+        assert.equal(response.statusCode, StatusCodes.OK);
+        assert.deepEqual(response.json(), {
+          hasPreviousPage: false,
+          items: [
+            {
+              content: "Hello, how are you?",
+              createdAt: 1645342800,
+              id: 1,
+              receiver: {
+                firstName: "firstName",
+                id: 1,
+                lastName: "lastName",
+              },
+              sender: {
+                firstName: "firstName",
+                id: 1,
+                lastName: "lastName",
+              },
+            },
+          ],
+        });
+      });
     });
   });
 });

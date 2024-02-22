@@ -4,6 +4,7 @@ import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
 import db from "../../db";
+import { cursorPaginationDefs } from "../../pagination";
 import { authServerErrorDefs } from "../../plugins/swagger";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
@@ -66,8 +67,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         querystring: {
           type: "object",
           properties: {
-            first: { type: "number", minimum: 0, default: 10 },
-            after: { type: "number", minimum: 0 },
+            ...cursorPaginationDefs,
           },
         },
         response: {
@@ -106,11 +106,11 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
                   required: ["id", "sender", "receiver", "content", "createdAt"],
                 },
               },
-              hasNextPage: {
+              hasPreviousPage: {
                 type: "boolean",
               },
             },
-            required: ["items", "hasNextPage"],
+            required: ["items", "hasPreviousPage"],
           },
           ...authServerErrorDefs,
         },
@@ -128,9 +128,9 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         senderId: currentUser.id,
       });
 
-      const hasNextPage = messages.length > request.query.first;
-      if (hasNextPage) {
-        messages = messages.slice(0, request.query.first);
+      const hasPreviousPage = messages.length > request.query.limit;
+      if (hasPreviousPage) {
+        messages = messages.slice(0, request.query.limit);
       }
 
       const userIds = _.flatten<number>(messages.map((m) => [m.senderId, m.receiverId])).filter((id) => id !== currentUser.id);
@@ -148,7 +148,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
       return response.status(StatusCodes.OK).send({
         items: result,
-        hasNextPage,
+        hasPreviousPage,
       });
     },
   );
@@ -162,8 +162,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           type: "object",
           properties: {
             receiverId: { type: "number", minimum: 0 },
-            first: { type: "number", minimum: 0, default: 10 },
-            after: { type: "number", minimum: 0 },
+            limit: { type: "number", minimum: 0, default: 10 },
+            before: { type: "number", minimum: 0 },
           },
           required: ["receiverId"],
         },
@@ -203,11 +203,11 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
                   required: ["id", "sender", "receiver", "content", "createdAt"],
                 },
               },
-              hasNextPage: {
+              hasPreviousPage: {
                 type: "boolean",
               },
             },
-            required: ["items", "hasNextPage"],
+            required: ["items", "hasPreviousPage"],
           },
           ...authServerErrorDefs,
         },
@@ -220,10 +220,15 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const sender = request.user as User;
-      let messages = await db.message.list(request.server.prisma, { ...request.query, senderId: sender.id });
-      const hasNextPage = messages.length > request.query.first;
-      if (hasNextPage) {
-        messages = messages.slice(0, request.query.first);
+      let messages = await db.message.list(request.server.prisma, {
+        ...request.query,
+        senderId: sender.id,
+        receiverId: request.query.receiverId,
+      });
+
+      const hasPreviousPage = messages.length > request.query.limit;
+      if (hasPreviousPage) {
+        messages = messages.slice(0, request.query.limit);
       }
 
       const selectedFields = ["id", "firstName", "lastName"];
@@ -238,7 +243,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
               receiver: _.pick(sender, selectedFields),
             };
           }),
-          hasNextPage,
+          hasPreviousPage,
         };
       }
 
@@ -255,7 +260,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
       return response.status(StatusCodes.OK).send({
         items: result,
-        hasNextPage,
+        hasPreviousPage,
       });
     },
   );
