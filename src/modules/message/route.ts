@@ -4,8 +4,8 @@ import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
 import db from "../../db";
-import { authServerErrorDefs } from "../../plugins/swagger";
 import { cursorPaginationDefs } from "../../pagination";
+import { authServerErrorDefs } from "../../plugins/swagger";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();

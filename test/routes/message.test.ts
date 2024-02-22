@@ -1,9 +1,10 @@
+import { User } from "@prisma/client";
 import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
 import db from "../../src/db";
-import { loginToken } from "../data";
+import { authenticatedUser, loginToken } from "../data";
 import { build } from "../helper";
 
 test("Message routes", async (t) => {
@@ -156,6 +157,66 @@ test("Message routes", async (t) => {
 
         assert.equal(response.statusCode, StatusCodes.OK);
         assert.deepEqual(response.json(), { items: [], hasPreviousPage: false });
+      });
+
+      await t.test("Should return a list with limit correctly", async () => {
+        const otherUser: User = {
+          id: 2,
+          firstName: "John",
+          lastName: "Doe",
+        };
+
+        listMessagesStub.resolves([
+          {
+            id: 1,
+            senderId: otherUser.id,
+            receiverId: authenticatedUser.id,
+            content: "Hello, how are you?",
+            createdAt: 1645342800,
+          },
+          {
+            id: 2,
+            senderId: authenticatedUser.id,
+            receiverId: otherUser.id,
+            content: "I'm doing well, thank you!",
+            createdAt: 1645343100,
+          },
+        ]);
+        findByIdUserStub.resolves(otherUser);
+
+        const response = await app.inject({
+          method: "GET",
+          url: "/messages",
+          query: {
+            receiverId: otherUser.id,
+            limit: "1",
+          },
+          headers: {
+            authorization: `Bearer ${loginToken}`,
+          },
+        });
+
+        assert.equal(response.statusCode, StatusCodes.OK);
+        assert.deepEqual(response.json(), {
+          hasPreviousPage: true,
+          items: [
+            {
+              content: "Hello, how are you?",
+              createdAt: 1645342800,
+              id: 1,
+              receiver: {
+                firstName: "firstName",
+                id: 1,
+                lastName: "lastName",
+              },
+              sender: {
+                firstName: "John",
+                id: 2,
+                lastName: "Doe",
+              },
+            },
+          ],
+        });
       });
     });
   });
