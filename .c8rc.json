@@ -1,7 +1,4 @@
 {
-  "reporter": [
-    "text",
-    "text-summary",
-    "cobertura"
-  ]
+  "reporter": ["text", "text-summary", "cobertura"],
+  "exclude": ["./src/db.ts"]
 }
