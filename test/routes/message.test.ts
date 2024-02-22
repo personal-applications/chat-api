@@ -11,6 +11,7 @@ test("Message routes", async (t) => {
   const app = await build(t);
 
   const findByIdUserStub = Sinon.stub(db.user, "findById");
+  const findByIdsUserStub = Sinon.stub(db.user, "findByIds");
   const createMessageStub = Sinon.stub(db.message, "create");
   const listConversationsStub = Sinon.stub(db.message, "listConversations");
   const listMessagesStub = Sinon.stub(db.message, "list");
@@ -98,7 +99,7 @@ test("Message routes", async (t) => {
       assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
     });
 
-    await t.test("Should return a list of messages", async (t) => {
+    await t.test("Should return a list of messages without condition correctly", async () => {
       listConversationsStub.resolves([]);
 
       const response = await app.inject({
@@ -112,6 +113,70 @@ test("Message routes", async (t) => {
 
       assert.equal(response.statusCode, StatusCodes.OK);
       assert.deepEqual(response.json(), { items: [], hasPreviousPage: false });
+    });
+
+    await t.test("Should return a list of messages with limit correctly", async () => {
+      const secondUser: User = {
+        id: 2,
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const thirdUser: User = {
+        id: 3,
+        firstName: "John",
+        lastName: "Doe",
+      };
+
+      listConversationsStub.resolves([
+        {
+          id: 1,
+          senderId: secondUser.id,
+          receiverId: authenticatedUser.id,
+          content: "Hello, how are you?",
+          createdAt: 1645342800,
+        },
+        {
+          id: 2,
+          senderId: authenticatedUser.id,
+          receiverId: thirdUser.id,
+          content: "I'm doing well, thank you!",
+          createdAt: 1645343100,
+        },
+      ]);
+      findByIdsUserStub.resolves([secondUser, thirdUser]);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/messages/conversations",
+        query: {
+          limit: "1",
+        },
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), {
+        hasPreviousPage: true,
+        items: [
+          {
+            content: "Hello, how are you?",
+            createdAt: 1645342800,
+            id: 1,
+            receiver: {
+              firstName: "firstName",
+              id: 1,
+              lastName: "lastName",
+            },
+            sender: {
+              firstName: "John",
+              id: 2,
+              lastName: "Doe",
+            },
+          },
+        ],
+      });
     });
   });
 
