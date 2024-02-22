@@ -1,41 +1,7 @@
-import { Message, Prisma, PrismaClient, User } from "@prisma/client";
+import { Message, Prisma, PrismaClient } from "@prisma/client";
 import { CursorPaginationCondition } from "./pagination";
 
 const db = {
-  user: {
-    create: (prisma: PrismaClient, email: string, password: string, firstName?: string, lastName?: string) => {
-      return prisma.user.create({
-        data: {
-          email: email,
-          password: password,
-          firstName: firstName,
-          lastName: lastName,
-        },
-      });
-    },
-    updateInfo: (prisma: PrismaClient, email: string, info: Partial<Pick<User, "firstName" | "lastName" | "password">>) => {
-      return prisma.user.update({ where: { email }, data: info });
-    },
-    findByEmail: (prisma: PrismaClient, email: string) => {
-      return prisma.user.findFirst({ where: { email } });
-    },
-    findById: (prisma: PrismaClient, id: number): Promise<User> => {
-      return prisma.user.findFirst({ where: { id } });
-    },
-    findByIds: (prisma: PrismaClient, ids: number[]): Promise<User[]> => {
-      if (ids.length === 0) {
-        return Promise.resolve([]);
-      }
-      return prisma.user.findMany({
-        where: { id: { in: ids } },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-        },
-      });
-    },
-  },
   revokedToken: {
     find: (prisma: PrismaClient, hash: string) => {
       return prisma.removedToken.findFirst({ where: { token: hash } });
