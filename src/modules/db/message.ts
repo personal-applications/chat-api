@@ -26,7 +26,7 @@ const messageQueries = {
           where (senderId = ${condition.senderId} or receiverId = ${condition.senderId})
             and #cursorCondition
           group by min(senderId, receiverId), max(senderId, receiverId)
-          order by createdAt desc
+          order by createdAt desc, id desc
           limit ${condition.limit + 1}
       `;
     if (condition.before) {
