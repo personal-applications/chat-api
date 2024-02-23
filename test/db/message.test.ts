@@ -75,7 +75,7 @@ test("Message queries", async (t) => {
       const user1 = await prisma.user.findFirst({ where: { email: "user1@example.com" } });
       const lastMessage = await prisma.message.findFirst({ where: {}, orderBy: { createdAt: "desc" } });
 
-      let result = await messageQueries.listConversations(prisma, { limit: 1, senderId: user1.id, before: lastMessage.id });
+      const result = await messageQueries.listConversations(prisma, { limit: 1, senderId: user1.id, before: lastMessage.id });
       const messageIds = result.map((result) => result.id);
 
       assert(messageIds.every((id) => id < lastMessage.id));
@@ -98,6 +98,26 @@ test("Message queries", async (t) => {
           content: `Message 1 from User ${user2.id} to User ${user1.id}`,
         },
       ]);
+    });
+
+    await t.test("Should list messages correctly when before cursor is provided", async () => {
+      const user1 = await prisma.user.findFirst({ where: { email: "user1@example.com" } });
+      const user2 = await prisma.user.findFirst({ where: { email: "user2@example.com" } });
+
+      const lastMessage = await prisma.message.findFirst({
+        where: {
+          senderId: user2.id,
+          receiverId: user1.id,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      const result = await messageQueries.list(prisma, { limit: 1, senderId: user1.id, receiverId: user2.id, before: lastMessage.id });
+      const messageIds = result.map((r) => r.id);
+
+      assert(messageIds.every((id) => id < lastMessage.id));
     });
   });
 });
