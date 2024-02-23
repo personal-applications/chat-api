@@ -4,13 +4,13 @@ import jsonwebtoken from "jsonwebtoken";
 import assert from "node:assert";
 import { test } from "node:test";
 import Sinon from "sinon";
-import config from "../../src/config";
-import authenticationService from "../../src/modules/authentication/service";
-import userQueries from "../../src/modules/db/user";
-import jwt from "../../src/modules/jwt/jwt";
-import mail from "../../src/modules/mail/mail";
-import { authenticatedUser } from "../data";
-import { build } from "../helper";
+import config from "../../../src/config";
+import authenticationService from "../../../src/modules/authentication/service";
+import userQueries from "../../../src/modules/db/user";
+import jwt from "../../../src/modules/jwt/jwt";
+import mail from "../../../src/modules/mail/mail";
+import { authenticatedUser } from "../../data";
+import { build } from "../../helper";
 
 test("Authentication routes", async (t) => {
   const app = await build(t);
