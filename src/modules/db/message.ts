@@ -28,7 +28,7 @@ const messageQueries = {
         order by createdAt desc, id desc
         limit ${condition.limit + 1}
       `;
-    console.log(query);
+
     if (condition.before) {
       query = query.replace("#whereCondition", `id < ${condition.before}`);
     } else {
