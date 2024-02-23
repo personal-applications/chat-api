@@ -1,4 +1,4 @@
 {
   "reporter": ["text", "text-summary", "cobertura"],
-  "exclude": ["src/db.ts", "test/**"]
+  "exclude": ["test/**"]
 }
