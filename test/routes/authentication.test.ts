@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import jsonwebtoken from "jsonwebtoken";
 import assert from "node:assert";
 import { test } from "node:test";
-import sinon from "sinon";
+import Sinon from "sinon";
 import config from "../../src/config";
 import authenticationService from "../../src/modules/authentication/service";
 import userQueries from "../../src/modules/db/user";
@@ -15,9 +15,9 @@ import { build } from "../helper";
 test("Authentication routes", async (t) => {
   const app = await build(t);
 
-  const userQueriesStub = sinon.stub(userQueries);
-  const sendMailStub = sinon.stub(mail).send.resolves();
-  const authenticationServiceStub = sinon.stub(authenticationService);
+  const userQueriesStub = Sinon.stub(userQueries);
+  const sendMailStub = Sinon.stub(mail).send.resolves();
+  const authenticationServiceStub = Sinon.stub(authenticationService);
 
   await t.test("POST /auth/reset-password", async (t) => {
     await t.test("Should throw validation errors if fields are not provided", async (t) => {
