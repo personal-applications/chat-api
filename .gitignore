@@ -64,4 +64,4 @@ test/types/index.js
 dist
 
 .env
-dev.db
+prisma/dev*.db

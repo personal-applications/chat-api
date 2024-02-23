@@ -3,9 +3,9 @@ import { User } from "@prisma/client";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
-import db from "../../db";
 import { cursorPaginationDefs } from "../../pagination";
 import { authServerErrorDefs } from "../../plugins/swagger";
+import messageQueries from "../db/message";
 import userQueries from "../db/user";
 
 const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
@@ -50,7 +50,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
       }
 
-      const message = await db.message.create(request.server.prisma, {
+      const message = await messageQueries.create(request.server.prisma, {
         senderId: currentUser.id,
         receiverId: request.body.receiverId,
         content: request.body.content,
@@ -124,7 +124,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const currentUser = request.user as User;
-      let messages = await db.message.listConversations(request.server.prisma, {
+      let messages = await messageQueries.listConversations(request.server.prisma, {
         ...request.query,
         senderId: currentUser.id,
       });
@@ -221,7 +221,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     },
     async (request, response) => {
       const sender = request.user as User;
-      let messages = await db.message.list(request.server.prisma, {
+      let messages = await messageQueries.list(request.server.prisma, {
         ...request.query,
         senderId: sender.id,
         receiverId: request.query.receiverId,

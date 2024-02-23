@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
-import db from "../../src/db";
+import messageQueries from "../../src/modules/db/message";
 import userQueries from "../../src/modules/db/user";
 import { authenticatedUser, loginToken } from "../data";
 import { build } from "../helper";
@@ -12,9 +12,7 @@ test("Message routes", async (t) => {
   const app = await build(t);
 
   const userQueriesStub = Sinon.stub(userQueries);
-  const createMessageStub = Sinon.stub(db.message, "create");
-  const listConversationsStub = Sinon.stub(db.message, "listConversations");
-  const listMessagesStub = Sinon.stub(db.message, "list");
+  const messageQueriesStub = Sinon.stub(messageQueries);
 
   t.beforeEach(() => {
     Sinon.reset();
@@ -69,7 +67,7 @@ test("Message routes", async (t) => {
     });
 
     await t.test("Should create message correctly", async () => {
-      createMessageStub.resolves({ id: 1 });
+      messageQueriesStub.create.resolves({ id: 1 });
 
       const response = await app.inject({
         method: "POST",
@@ -100,7 +98,7 @@ test("Message routes", async (t) => {
     });
 
     await t.test("Should return a list of messages without condition correctly", async () => {
-      listConversationsStub.resolves([]);
+      messageQueriesStub.listConversations.resolves([]);
 
       const response = await app.inject({
         method: "GET",
@@ -127,7 +125,7 @@ test("Message routes", async (t) => {
         lastName: "Doe",
       };
 
-      listConversationsStub.resolves([
+      messageQueriesStub.listConversations.resolves([
         {
           id: 1,
           senderId: secondUser.id,
@@ -207,7 +205,7 @@ test("Message routes", async (t) => {
 
     await t.test("Should return a list of messages correctly", async (t) => {
       await t.test("Should return a list without any condition correctly", async () => {
-        listMessagesStub.resolves([]);
+        messageQueriesStub.list.resolves([]);
 
         const response = await app.inject({
           method: "GET",
@@ -231,7 +229,7 @@ test("Message routes", async (t) => {
           lastName: "Doe",
         };
 
-        listMessagesStub.resolves([
+        messageQueriesStub.list.resolves([
           {
             id: 1,
             senderId: otherUser.id,
@@ -285,7 +283,7 @@ test("Message routes", async (t) => {
       });
 
       await t.test("Should not call db when getting messages for same user", async () => {
-        listMessagesStub.resolves([
+        messageQueriesStub.list.resolves([
           {
             id: 1,
             senderId: authenticatedUser.id,
