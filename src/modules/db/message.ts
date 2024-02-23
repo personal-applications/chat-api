@@ -24,15 +24,16 @@ const messageQueries = {
                  max(createdAt) as createdAt
           from Message
           where (senderId = ${condition.senderId} or receiverId = ${condition.senderId})
-            and #cursorCondition
           group by min(senderId, receiverId), max(senderId, receiverId)
+          #havingCondition
           order by createdAt desc, id desc
           limit ${condition.limit + 1}
       `;
+
     if (condition.before) {
-      query = query.replace("#cursorCondition", `id < ${condition.after ?? true}`);
+      query = query.replace("#havingCondition", `having id < ${condition.before}`);
     } else {
-      query = query.replace("#cursorCondition", "true");
+      query = query.replace("#havingCondition", "");
     }
 
     return prisma.$queryRawUnsafe<Message[]>(query);

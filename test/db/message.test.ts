@@ -70,5 +70,14 @@ test("Message queries", async (t) => {
         },
       ]);
     });
+
+    await t.test("Should return a list correctly when cursor is provided", async (t) => {
+      const user1 = await prisma.user.findFirst({ where: { email: "user1@example.com" } });
+      const lastMessage = await prisma.message.findFirst({ where: {}, orderBy: { createdAt: "desc" } });
+      let result = await messageQueries.listConversations(prisma, { limit: 1, senderId: user1.id, before: lastMessage.id });
+      const messageIds = result.map((result) => result.id);
+
+      assert(messageIds.every((id) => id < lastMessage.id));
+    });
   });
 });
