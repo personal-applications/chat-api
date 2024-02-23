@@ -17,23 +17,22 @@ const messageQueries = {
      * The result is ordered by the latest timestamp
      */
     let query = `
-          select id,
-                 senderId,
-                 receiverId,
-                 content,
-                 max(createdAt) as createdAt
-          from Message
-          where (senderId = ${condition.senderId} or receiverId = ${condition.senderId})
-          group by min(senderId, receiverId), max(senderId, receiverId)
-          #havingCondition
-          order by createdAt desc, id desc
-          limit ${condition.limit + 1}
+        select id,
+                senderId,
+                receiverId,
+                content,
+                max(createdAt) as createdAt
+        from Message
+        where (senderId = ${condition.senderId} or receiverId = ${condition.senderId}) and #whereCondition
+        group by min(senderId, receiverId), max(senderId, receiverId)
+        order by createdAt desc, id desc
+        limit ${condition.limit + 1}
       `;
-
+    console.log(query);
     if (condition.before) {
-      query = query.replace("#havingCondition", `having id < ${condition.before}`);
+      query = query.replace("#whereCondition", `id < ${condition.before}`);
     } else {
-      query = query.replace("#havingCondition", "");
+      query = query.replace("#whereCondition", "true");
     }
 
     return prisma.$queryRawUnsafe<Message[]>(query);
