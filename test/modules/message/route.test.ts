@@ -3,10 +3,10 @@ import { StatusCodes } from "http-status-codes";
 import assert from "node:assert";
 import test from "node:test";
 import Sinon from "sinon";
-import messageQueries from "../../src/modules/db/message";
-import userQueries from "../../src/modules/db/user";
-import { authenticatedUser, loginToken } from "../data";
-import { build } from "../helper";
+import messageQueries from "../../../src/modules/db/message";
+import userQueries from "../../../src/modules/db/user";
+import { authenticatedUser, loginToken } from "../../data";
+import { build } from "../../helper";
 
 test("Message routes", async (t) => {
   const app = await build(t);
