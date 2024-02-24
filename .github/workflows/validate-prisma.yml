@@ -1,14 +1,15 @@
-name: CI
+name: Validate prisma
 
 on:
   push:
-    branches:
-      - main
+    paths:
+      - prisma/schema.prisma
   pull_request:
-    
+    paths:
+      - prisma/schema.prisma
 
 jobs:
-  unit_test:
+  validate_schema:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,7 +18,4 @@ jobs:
           node-version: 21
           cache: npm
       - run: npm ci
-      - run: npm test
-      - uses: codecov/codecov-action@v4
-        env:
-         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - run: dotenv -e .env.test -- prisma validate
