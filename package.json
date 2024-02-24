@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "npm run build:ts && tsc -p test/tsconfig.json && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- c8 node --test -r ts-node/register \"test/**/*.ts\"",
-    "start": "npm run build:ts && dotenv -- fastify start -l info dist/app.js",
+    "start": "dotenv -- fastify start -l info dist/app.js",
+    "prisma:deploy": "prisma migrate deploy",
     "build:ts": "tsc",
     "watch:ts": "tsc -w",
     "dev": "dotenv -- npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App,CopyTemplates\" -c \"yellow.bold,cyan.bold,blue.bold\" \"npm:watch:ts\" \"npm:dev:start\" \"npm:watch:cp-templates\"",
