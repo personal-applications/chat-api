@@ -21,4 +21,4 @@ RUN ./node_modules/.bin/prisma generate
 
 COPY --from=builder /app/dist ./dist
 
-CMD ["sh"]
+CMD sh -c "npm run prisma:deploy && npm run start"
