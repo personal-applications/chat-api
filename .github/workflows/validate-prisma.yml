@@ -1,12 +1,5 @@
-name: Validate prisma
-
 on:
-  push:
-    paths:
-      - prisma/schema.prisma
-  pull_request:
-    paths:
-      - prisma/schema.prisma
+  workflow_call:
 
 jobs:
   validate_schema:
