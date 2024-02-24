@@ -11,4 +11,4 @@ jobs:
           node-version: 21
           cache: npm
       - run: npm ci
-      - run: dotenv -e .env.test -- prisma validate
+      - run: ./node_modules/.bin/dotenv -e .env.test -- ./node_modules/.bin/prisma validate
