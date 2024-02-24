@@ -22,4 +22,4 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   validate_prisma_schema:
-    uses: ./github/workflows/validate-prisma.yml
+    uses: ./.github/workflows/validate-prisma.yml
