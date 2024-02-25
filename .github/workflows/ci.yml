@@ -11,6 +11,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate_schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 21
+          cache: npm
+      - run: npm ci
+      - run: ./node_modules/.bin/dotenv -e .env.test -- ./node_modules/.bin/prisma validate
+
   unit_test:
     needs:
       - validate_schema
@@ -27,13 +38,15 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  validate_schema:
+  docker_build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
-          node-version: 21
-          cache: npm
-      - run: npm ci
-      - run: ./node_modules/.bin/dotenv -e .env.test -- ./node_modules/.bin/prisma validate
+          push: false
+          tags: image:latest
