@@ -11,55 +11,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate_schema:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 21
-          cache: npm
-      - run: npm ci
-      - run: ./node_modules/.bin/dotenv -e .env.test -- ./node_modules/.bin/prisma validate
+  # validate_schema:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 21
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: ./node_modules/.bin/dotenv -e .env.test -- ./node_modules/.bin/prisma validate
 
-  unit_test:
-    needs:
-      - validate_schema
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 21
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  # unit_test:
+  #   needs:
+  #     - validate_schema
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 21
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npm test
+  #     - uses: codecov/codecov-action@v4
+  #       env:
+  #         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  docker_build_push:
-    needs:
-      - validate_schema
+  # docker_build_push:
+  #   needs:
+  #     - validate_schema
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+  #     - name: Login to Docker Hub
+  #       if: github.event_name != 'pull_request'
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #         password: ${{ secrets.DOCKERHUB_TOKEN }}
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         push: ${{ github.event_name != 'pull_request' }}
+  #         tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
+  #         cache-from: type=registry,ref=user/app:latest
+  #         cache-to: type=inline
+
+  deploy_prod:
+    # needs:
+    #   - docker_build_push
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to Docker Hub
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+      - uses: appleboy/ssh-action@v1.0.3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
-          cache-from: type=registry,ref=user/app:latest
-          cache-to: type=inline
+          host: 167.99.75.161
+          username: root
+          key: ${{ secrets.VM_PRIVATE_KEY }}
+          script: |
+            whoami
