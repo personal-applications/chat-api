@@ -2,6 +2,7 @@ import swagger, { SwaggerOptions } from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 import fp from "fastify-plugin";
 import { ReasonPhrases } from "http-status-codes";
+import config from "../config";
 
 export const serverErrorDefs = {
   400: {
@@ -42,7 +43,7 @@ export default fp<SwaggerOptions>(async (fastify) => {
       },
       servers: [
         {
-          url: "http://localhost:3000",
+          url: `http://localhost:${config.backend.port}`,
         },
       ],
       components: {
