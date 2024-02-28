@@ -63,4 +63,4 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
           cache-to: type=inline
-          platform: linux/amd64, linux/arm64
+          platforms: linux/amd64, linux/arm64
