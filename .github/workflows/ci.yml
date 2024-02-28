@@ -42,11 +42,6 @@ jobs:
     needs:
       - validate_schema
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platforms:
-          - linux/amd64
-          - linux/arm/v8
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,4 +63,4 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
           cache-to: type=inline
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64, linux/arm64/v8
