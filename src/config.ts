@@ -11,6 +11,7 @@ const resend = {
 
 const backend = {
   domain: process.env.BACKEND_DOMAIN ?? "",
+  port: process.env.PORT ?? 3000,
 };
 
 export default { jwt, resend, backend };
