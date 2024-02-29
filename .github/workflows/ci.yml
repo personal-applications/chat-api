@@ -40,7 +40,7 @@ jobs:
 
   docker_build_push:
     needs:
-      - validate_schema
+      - unit_test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -75,10 +75,11 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            await github.rest.repos.createDispatchEvent({
+            const result = await github.rest.repos.createDispatchEvent({
               owner: '${{ github.repository_owner }}',
               repo: 'chat-deployment',
               event_type: 'workflow_dispatch',
               client_payload: {"version": "v5.3.10"}
             })
+            console.log(result);
           github-token: ${{ secrets.DISPATCH_PAT }}
