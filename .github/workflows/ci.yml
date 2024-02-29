@@ -75,10 +75,34 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const result = await github.rest.repos.createDispatchEvent({
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            await github.rest.repos.createDispatchEvent({
               owner: '${{ github.repository_owner }}',
               repo: 'chat-deployment',
               event_type: 'deploy',
-            })
-            console.log(result);
+            });
+
+
+            let runStatus = 'queued';
+            while (runStatus !== 'completed') {
+              const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: '${{ github.repository_owner }}',
+                repo: 'chat-deployment',
+                event: 'repository_dispatch',
+                per_page: 1,
+              });
+
+              runStatus = runs.data.workflow_runs[0].status;
+              console.log(`Workflow run status: ${runStatus}`);
+
+              if (runStatus !== 'completed') {
+                await sleep(5000); // wait for 5 seconds before checking the status again
+              }
+            }
+
+            const runConclusion = runs.data.workflow_runs[0].conclusion;
+            if (runConclusion !== 'success') {
+              throw new Error(`Workflow did not end in success. Conclusion: ${runConclusion}`);
+            }
           github-token: ${{ secrets.DISPATCH_PAT }}
