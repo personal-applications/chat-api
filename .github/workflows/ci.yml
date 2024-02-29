@@ -69,5 +69,5 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - docker_build_push
-    uses: ${{ github.repository_owner }}/chat-deployment/.github/workflows/deploy_script.yml@main
+    uses: personal-applications/chat-deployment/.github/workflows/deploy_script.yml@main
     secrets: inherit
