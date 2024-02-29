@@ -64,3 +64,8 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
           cache-to: type=inline
           platforms: linux/amd64, linux/arm64/v8
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    uses: personal-applications/chat-deployment/.github/workflows/deploy.yml@main
+    secrets: inherit
