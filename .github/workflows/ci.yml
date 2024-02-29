@@ -66,6 +66,6 @@ jobs:
           platforms: linux/amd64, linux/arm64/v8
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    needs:
+      - docker_build_push
     uses: personal-applications/chat-deployment/.github/workflows/deploy.yml@main
-    secrets: inherit
