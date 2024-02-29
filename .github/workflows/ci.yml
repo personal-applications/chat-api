@@ -69,16 +69,5 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - docker_build_push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger workflow in other repository
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const result = await github.rest.repos.createDispatchEvent({
-              owner: '${{ github.repository_owner }}',
-              repo: 'chat-deployment',
-              event_type: 'deploy',
-            })
-            console.log(result);
-          github-token: ${{ secrets.DISPATCH_PAT }}
+    uses: personal-applications/chat-deployment/.github/workflows/deploy_script.yml@main
+    secrets: inherit
