@@ -78,7 +78,7 @@ jobs:
             const result = await github.rest.repos.createDispatchEvent({
               owner: '${{ github.repository_owner }}',
               repo: 'chat-deployment',
-              event_type: 'push',
+              event_type: 'deploy',
             })
             console.log(result);
           github-token: ${{ secrets.DISPATCH_PAT }}
