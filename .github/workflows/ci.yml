@@ -67,8 +67,8 @@ jobs:
 
   deploy:
     # if: github.ref == 'refs/heads/main'
-    # needs:
-    #   - docker_build_push
+    needs:
+      - docker_build_push
     runs-on: ubuntu-latest
     steps:
       - name: Trigger workflow in other repository
