@@ -66,6 +66,19 @@ jobs:
           platforms: linux/amd64, linux/arm64/v8
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs:
       - docker_build_push
-    uses: personal-applications/chat-deployment/.github/workflows/deploy.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger workflow in other repository
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: '${{ github.repository_owner }}',
+              repo: 'target-repo',
+              event_type: 'bcd_release',
+              client_payload: {"version": "v5.3.10"}
+            })
+          github-token: ${{ secrets.DISPATCH_PAT }}
