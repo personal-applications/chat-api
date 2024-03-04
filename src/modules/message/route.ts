@@ -23,6 +23,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
             receiverId: { type: "number" },
           },
           required: ["content", "receiverId"],
+          additionalProperties: false,
         },
         response: {
           200: {
@@ -70,6 +71,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           properties: {
             ...cursorPaginationDefs,
           },
+          additionalProperties: false,
         },
         response: {
           200: {
@@ -167,6 +169,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
             before: { type: "number", minimum: 0 },
           },
           required: ["receiverId"],
+          additionalProperties: false,
         },
         response: {
           200: {

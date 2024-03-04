@@ -32,6 +32,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             lastName: { type: "string", minLength: 2 },
           },
           required: ["email", "password", "confirmPassword"],
+          additionalProperties: false,
         },
         response: {
           204: {},
@@ -69,6 +70,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             password: { type: "string", pattern: PASSWORD_REGEX },
           },
           required: ["email", "password"],
+          additionalProperties: false,
         },
         response: {
           200: {
@@ -112,6 +114,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             email: { type: "string", format: "email" },
           },
           required: ["email"],
+          additionalProperties: false,
         },
         response: {
           200: {
@@ -165,6 +168,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             confirmPassword: { type: "string", pattern: PASSWORD_REGEX },
           },
           required: ["token", "newPassword", "confirmPassword"],
+          additionalProperties: false,
         },
         response: {
           202: {
