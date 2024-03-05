@@ -30,9 +30,7 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
   await fastify.register(fastifyJwt, {
     secret: config.jwt.secret,
   });
-  await fastify.register(cors, {
-    origin: "*",
-  });
+  await fastify.register(cors);
 
   // Do not touch the following lines
 
