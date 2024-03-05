@@ -5,8 +5,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-COPY ./ ./
+COPY prisma ./prisma
 RUN ./node_modules/.bin/prisma generate
+
+COPY ./ ./
 RUN npm run build:ts
 
 FROM node:21-alpine
