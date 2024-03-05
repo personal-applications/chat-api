@@ -1,4 +1,5 @@
 import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
+import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyPrisma from "@joggr/fastify-prisma";
 import addFormats from "ajv-formats";
@@ -28,6 +29,9 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
   });
   await fastify.register(fastifyJwt, {
     secret: config.jwt.secret,
+  });
+  await fastify.register(cors, {
+    origin: "*",
   });
 
   // Do not touch the following lines
