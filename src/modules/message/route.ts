@@ -3,6 +3,7 @@ import { User } from "@prisma/client";
 import { FastifyPluginAsync } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import _ from "lodash";
+import { createBadRequestResponse } from "../../error";
 import { cursorPaginationDefs } from "../../pagination";
 import { authServerErrorDefs } from "../../plugins/swagger";
 import messageQueries from "../db/message";
@@ -45,9 +46,13 @@ const messageRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       if (request.body.receiverId !== currentUser.id) {
         const receiver = await userQueries.findFirst(request.server.prisma, { id: request.body.receiverId });
         if (!receiver) {
-          return fastify.httpErrors.badRequest(
-            "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
-          );
+          return response
+            .status(StatusCodes.BAD_REQUEST)
+            .send(
+              createBadRequestResponse(
+                "Destination failed. The user you're trying to reach does not exist or is invalid. Please check the user ID and try again.",
+              ),
+            );
         }
       }
 

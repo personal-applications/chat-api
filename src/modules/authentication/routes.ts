@@ -6,6 +6,7 @@ import jsonwebtoken from "jsonwebtoken";
 import _ from "lodash";
 import config from "../../config";
 import { PASSWORD_REGEX } from "../../constants";
+import { createBadRequestResponse } from "../../error";
 import { createServerURL } from "../../helper";
 import { serverErrorDefs } from "../../plugins/swagger";
 import userQueries from "../db/user";
@@ -43,14 +44,18 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, response) => {
       const { password, confirmPassword } = request.body;
       if (password !== confirmPassword) {
-        return fastify.httpErrors.badRequest("Passwords do not match.");
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .send(createBadRequestResponse("Passwords do not match.", [{ field: "confirmPassword", message: "Passwords do not match." }]));
       }
 
       request.body.email = request.body.email.toLowerCase();
       // TODO: We can cache user query from DB
       const user = await userQueries.findFirst(server.prisma, { email: request.body.email });
       if (user) {
-        return fastify.httpErrors.badRequest("Email is not available.");
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .send(createBadRequestResponse("Email is not available.", [{ field: "email", message: "Email is not available." }]));
       }
 
       request.body.password = await bcrypt.hash(request.body.password, 10);
@@ -86,17 +91,17 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, response) => {
       // TODO: We can cache user query from DB
-      const error = fastify.httpErrors.badRequest("Invalid credentials.");
+      const error = createBadRequestResponse("Invalid credentials.");
 
       request.body.email = request.body.email.toLowerCase();
       const user = await userQueries.findFirst(server.prisma, { email: request.body.email });
       if (!user) {
-        return error;
+        return response.status(StatusCodes.BAD_REQUEST).send(error);
       }
 
       const isPasswordMatched = await bcrypt.compare(request.body.password, user.password);
       if (!isPasswordMatched) {
-        return error;
+        return response.status(StatusCodes.BAD_REQUEST).send(error);
       }
 
       const jwtToken = jwt.createLogInToken(user);
@@ -186,7 +191,9 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, response) => {
       const { newPassword, confirmPassword } = request.body;
       if (newPassword !== confirmPassword) {
-        return fastify.httpErrors.badRequest("Passwords do not match.");
+        return response
+          .status(StatusCodes.BAD_REQUEST)
+          .send(createBadRequestResponse("Passwords do not match.", [{ field: "confirmPassword", message: "Passwords do not match." }]));
       }
 
       let email: string;
@@ -194,16 +201,16 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         const payload = jsonwebtoken.verify(request.body.token, config.jwt.secretForgotPassword) as jsonwebtoken.JwtPayload;
         email = payload.email;
       } catch (error) {
-        return fastify.httpErrors.badRequest("Invalid token.");
+        return response.status(StatusCodes.BAD_REQUEST).send(createBadRequestResponse("Invalid token."));
       }
 
       if (await authenticationService.isTokenRevoked(server.prisma, request.body.token)) {
-        return fastify.httpErrors.badRequest("Invalid token.");
+        return response.status(StatusCodes.BAD_REQUEST).send(createBadRequestResponse("Invalid token."));
       }
 
       const user = await userQueries.findFirst(server.prisma, { email });
       if (!user) {
-        return fastify.httpErrors.badRequest("Invalid token.");
+        return response.status(StatusCodes.BAD_REQUEST).send(createBadRequestResponse("Invalid token."));
       }
 
       const newHashedPassword = await bcrypt.hash(newPassword, 10);
