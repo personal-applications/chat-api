@@ -4,22 +4,43 @@ import fp from "fastify-plugin";
 import { ReasonPhrases } from "http-status-codes";
 import config from "../config";
 
+const errorDef = {
+  type: "object",
+  properties: {
+    status: {
+      type: "string",
+      enum: ["error"],
+    },
+    code: {
+      type: "number",
+    },
+    message: {
+      type: "string",
+    },
+    errors: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          field: {
+            type: "string",
+          },
+          message: {
+            type: "string",
+          },
+        },
+        required: ["field", "message"],
+      },
+    },
+  },
+  required: ["status", "code", "message", "errors"],
+};
 export const serverErrorDefs = {
   400: {
     description: "Validation error",
-    type: "object",
-    properties: {
-      message: { type: "string" },
-    },
-    required: ["message"],
+    ...errorDef,
   },
-  500: {
-    type: "object",
-    properties: {
-      message: { type: "string" },
-    },
-    required: ["message"],
-  },
+  500: errorDef,
 };
 
 export const authServerErrorDefs = {
@@ -44,6 +65,9 @@ export default fp<SwaggerOptions>(async (fastify) => {
       servers: [
         {
           url: `http://localhost:${config.backend.port}`,
+        },
+        {
+          url: `http://localhost:8080/api`,
         },
       ],
       components: {
