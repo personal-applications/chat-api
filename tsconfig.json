@@ -5,5 +5,5 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*.ts", "test/error.test.ts"]
+  "include": ["src/**/*.ts"]
 }
