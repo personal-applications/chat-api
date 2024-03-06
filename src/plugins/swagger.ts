@@ -1,7 +1,7 @@
 import swagger, { SwaggerOptions } from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 import fp from "fastify-plugin";
-import { ReasonPhrases } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import config from "../config";
 
 const errorDef = {
@@ -9,10 +9,11 @@ const errorDef = {
   properties: {
     status: {
       type: "string",
-      enum: ["error"],
+      default: ReasonPhrases.OK,
     },
     code: {
       type: "number",
+      default: StatusCodes.OK,
     },
     message: {
       type: "string",
@@ -31,28 +32,20 @@ const errorDef = {
         },
         required: ["field", "message"],
       },
+      default: [],
     },
   },
   required: ["status", "code", "message", "errors"],
 };
+
 export const serverErrorDefs = {
-  400: {
-    description: "Validation error",
-    ...errorDef,
-  },
-  500: errorDef,
+  [StatusCodes.BAD_REQUEST]: errorDef,
+  [StatusCodes.INTERNAL_SERVER_ERROR]: errorDef,
 };
 
 export const authServerErrorDefs = {
   ...serverErrorDefs,
-  401: {
-    description: ReasonPhrases.UNAUTHORIZED,
-    type: "object",
-    properties: {
-      message: { type: "string" },
-    },
-    required: ["message"],
-  },
+  [StatusCodes.UNAUTHORIZED]: errorDef,
 };
 
 export default fp<SwaggerOptions>(async (fastify) => {
