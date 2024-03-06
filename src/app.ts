@@ -8,7 +8,10 @@ import { join } from "path";
 import config from "./config";
 
 import Ajv2019 from "ajv/dist/2019";
+import { FastifySchemaValidationError } from "fastify/types/schema";
+import { createBadRequestResponse, createErrorResponse } from "./error";
 const ajv = new Ajv2019({
+  removeAdditional: "all",
   coerceTypes: true,
 });
 addFormats(ajv);
@@ -32,6 +35,17 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
   });
   await fastify.register(cors);
 
+  fastify.setErrorHandler((error, request, response) => {
+    request.log.error(error);
+    if (error.validation) {
+      const validationError = error.validation[0] as FastifySchemaValidationError;
+      return response
+        .status(error.statusCode!)
+        .send(createBadRequestResponse(error.message, [{ field: validationError.instancePath.replace("/", ""), message: validationError.message! }]));
+    }
+
+    return response.status(error.statusCode!).send(createErrorResponse(error.statusCode!, error.message));
+  });
   // Do not touch the following lines
 
   // This loads all plugins defined in plugins
