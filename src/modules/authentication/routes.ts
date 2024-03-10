@@ -37,8 +37,8 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
           errorMessage: {
             properties: {
               password:
-                "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-              confirmPassword: "Passwords do not match",
+                "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+              confirmPassword: "Passwords do not match.",
             },
           },
         },
@@ -85,7 +85,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
           additionalProperties: false,
           errorMessage: {
             password:
-              "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+              "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
           },
         },
         response: {
