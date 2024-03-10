@@ -28,7 +28,10 @@ test("Authentication routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-      assert.equal(response.json().message, "body must have required property 'token'");
+      assert.equal(
+        response.json().message,
+        "body must have required property 'token', body must have required property 'newPassword', body must have required property 'confirmPassword'",
+      );
     });
 
     await t.test("Should throw a validation error if token is not valid", async (t) => {
@@ -156,7 +159,7 @@ test("Authentication routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-      assert.equal(response.json().message, "body must have required property 'email'");
+      assert.equal(response.json().message, "body must have required property 'email', body must have required property 'password'");
     });
 
     await t.test("Should throw an error if not user with email is found", async (t) => {
@@ -264,7 +267,10 @@ test("Authentication routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-      assert.equal(response.json().message, "body must have required property 'email'");
+      assert.equal(
+        response.json().message,
+        "body must have required property 'email', body must have required property 'password', body must have required property 'confirmPassword'",
+      );
     });
 
     await t.test("Should throw validation error if passwords are not matched", async (t) => {

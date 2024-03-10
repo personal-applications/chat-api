@@ -2,6 +2,7 @@ import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyPrisma from "@joggr/fastify-prisma";
+import ajvErrors from "ajv-errors";
 import addFormats from "ajv-formats";
 import { FastifyPluginAsync, FastifyServerOptions } from "fastify";
 import { join } from "path";
@@ -13,8 +14,10 @@ import { createBadRequestResponse, createErrorResponse } from "./error";
 const ajv = new Ajv2019({
   removeAdditional: "all",
   coerceTypes: true,
+  allErrors: true,
 });
 addFormats(ajv);
+ajvErrors(ajv);
 
 export interface AppOptions extends FastifyServerOptions, Partial<AutoloadPluginOptions> {}
 // Pass --options via CLI arguments in command to enable these options.
