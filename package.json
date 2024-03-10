@@ -30,6 +30,7 @@
     "@fastify/type-provider-json-schema-to-ts": "^3.0.0",
     "@joggr/fastify-prisma": "^1.2.3",
     "@prisma/client": "^5.8.1",
+    "ajv-errors": "^3.0.0",
     "bcrypt": "^5.1.1",
     "copyfiles": "^2.4.1",
     "dotenv-cli": "^7.4.0",
