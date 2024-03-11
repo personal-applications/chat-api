@@ -22,6 +22,6 @@ COPY --from=builder /app/prisma ./prisma
 RUN ./node_modules/.bin/prisma generate
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/mail/templates ./dist/modules/mail/templates
+COPY --from=builder /app/src/modules/mail/templates ./dist/modules/mail/templates
 
 CMD sh -c "npm run prisma:deploy && npm run start"
