@@ -159,7 +159,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const token = jwt.createForgotPasswordToken(user);
-      const resetLink = createServerURL(`/auth/reset-password?token=${token}`);
+      const resetLink = createServerURL(`/reset-password?token=${token}`);
       await mail.send<"ForgotPassword">({
         to: request.body.email,
         template: "ForgotPassword",
