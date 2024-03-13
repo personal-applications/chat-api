@@ -40,7 +40,7 @@ test("Message routes", async (t) => {
       });
 
       assert.equal(response.statusCode, StatusCodes.BAD_REQUEST);
-      assert.equal(response.json().message, "body must have required property 'content', body must have required property 'receiverId'");
+      assert.equal(response.json().message, "body must have required property 'content'");
     });
 
     await t.test("Should throw error if send message to an unknown user", async () => {

@@ -28,7 +28,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             email: { type: "string", format: "email" },
             password: { type: "string", pattern: PASSWORD_REGEX },
-            confirmPassword: { type: "string", pattern: PASSWORD_REGEX },
+            confirmPassword: { const: { $data: "1/password" } },
             firstName: { type: "string", minLength: 2 },
             lastName: { type: "string", minLength: 2 },
           },
@@ -38,7 +38,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
             properties: {
               password:
                 "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-              confirmPassword: "Passwords do not match.",
+              confirmPassword: "body Passwords do not match.",
             },
           },
         },
@@ -49,13 +49,6 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, response) => {
-      const { password, confirmPassword } = request.body;
-      if (password !== confirmPassword) {
-        return response
-          .status(StatusCodes.BAD_REQUEST)
-          .send(createBadRequestResponse("Passwords do not match.", [{ field: "confirmPassword", message: "Passwords do not match." }]));
-      }
-
       request.body.email = request.body.email.toLowerCase();
       // TODO: We can cache user query from DB
       const user = await userQueries.findFirst(server.prisma, { email: request.body.email });
@@ -181,7 +174,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             token: { type: "string" },
             newPassword: { type: "string", pattern: PASSWORD_REGEX },
-            confirmPassword: { type: "string", pattern: PASSWORD_REGEX },
+            confirmPassword: { const: { $data: "1/newPassword" } },
           },
           required: ["token", "newPassword", "confirmPassword"],
           additionalProperties: false,
@@ -200,13 +193,6 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, response) => {
-      const { newPassword, confirmPassword } = request.body;
-      if (newPassword !== confirmPassword) {
-        return response
-          .status(StatusCodes.BAD_REQUEST)
-          .send(createBadRequestResponse("Passwords do not match.", [{ field: "confirmPassword", message: "Passwords do not match." }]));
-      }
-
       let email: string;
       try {
         const payload = jsonwebtoken.verify(request.body.token, config.jwt.secretForgotPassword) as jsonwebtoken.JwtPayload;
@@ -224,7 +210,7 @@ const authenticationRoutes: FastifyPluginAsync = async (fastify) => {
         return response.status(StatusCodes.BAD_REQUEST).send(createBadRequestResponse("Invalid token."));
       }
 
-      const newHashedPassword = await bcrypt.hash(newPassword, 10);
+      const newHashedPassword = await bcrypt.hash(request.body.newPassword, 10);
       await userQueries.update(server.prisma, { email }, { password: newHashedPassword });
       await mail.send<"ResetPasswordSuccess">({
         to: email,
