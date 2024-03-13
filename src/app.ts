@@ -8,13 +8,15 @@ import { FastifyPluginAsync, FastifyServerOptions } from "fastify";
 import { join } from "path";
 import config from "./config";
 
-import Ajv2019 from "ajv/dist/2019";
+import Ajv from "ajv";
 import { FastifySchemaValidationError } from "fastify/types/schema";
 import { createBadRequestResponse, createErrorResponse } from "./error";
-const ajv = new Ajv2019({
+
+const ajv = new Ajv({
   removeAdditional: "all",
   coerceTypes: true,
   allErrors: true,
+  $data: true,
 });
 addFormats(ajv);
 ajvErrors(ajv);
@@ -44,7 +46,11 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
       const validationError = error.validation[0] as FastifySchemaValidationError;
       return response
         .status(error.statusCode!)
-        .send(createBadRequestResponse(error.message, [{ field: validationError.instancePath.replace("/", ""), message: validationError.message! }]));
+        .send(
+          createBadRequestResponse(`${error.validationContext} ${validationError.message!.replace(error.validationContext ?? "", "").trim()}`, [
+            { field: validationError.instancePath.replace("/", ""), message: validationError.message! },
+          ]),
+        );
     }
 
     return response.status(error.statusCode!).send(createErrorResponse(error.statusCode!, error.message));
