@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import authenticationRoutes from "../modules/authentication/routes";
 import messageRoutes from "../modules/message/route";
+import userRoutes from "../modules/user/route";
 
 const authRoutes: FastifyPluginAsync = async (fastify, ops) => {
   fastify.register(async (ctx) => {
@@ -13,6 +14,7 @@ const authRoutes: FastifyPluginAsync = async (fastify, ops) => {
     });
 
     await messageRoutes(ctx, ops);
+    await userRoutes(ctx, ops);
   });
 };
 

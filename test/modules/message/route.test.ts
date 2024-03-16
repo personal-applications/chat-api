@@ -14,10 +14,6 @@ test("Message routes", async (t) => {
   const userQueriesStub = Sinon.stub(userQueries);
   const messageQueriesStub = Sinon.stub(messageQueries);
 
-  t.beforeEach(() => {
-    Sinon.reset();
-  });
-
   await t.test("POST /messages", async (t) => {
     await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
       const response = await app.inject({
