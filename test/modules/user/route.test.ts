@@ -11,11 +11,11 @@ test("User routes", async (t) => {
 
   const userQueriesStub = Sinon.stub(userQueries);
 
-  await t.test("GET /me", async (t) => {
+  await t.test("GET /users/me", async (t) => {
     await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
       const response = await app.inject({
         method: "GET",
-        url: "/me",
+        url: "/users/me",
       });
 
       assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
@@ -31,7 +31,7 @@ test("User routes", async (t) => {
 
       const response = await app.inject({
         method: "GET",
-        url: "/me",
+        url: "/users/me",
         headers: {
           authorization: `Bearer ${loginToken}`,
         },

@@ -9,7 +9,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
   const server = fastify.withTypeProvider<JsonSchemaToTsProvider>();
 
   server.get(
-    "/me",
+    "/users/me",
     {
       schema: {
         tags: ["User"],
