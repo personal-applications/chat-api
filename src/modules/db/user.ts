@@ -7,8 +7,8 @@ const userQueries = {
   update: (prisma: PrismaClient, condition: Prisma.UserWhereUniqueInput, data: Prisma.UserUpdateInput) => {
     return prisma.user.update({ where: condition, data });
   },
-  findFirst: (prisma: PrismaClient, condition: Prisma.UserWhereInput) => {
-    return prisma.user.findFirst({ where: condition });
+  findFirst: (prisma: PrismaClient, condition: Prisma.UserWhereInput, select?: Prisma.UserSelectScalar) => {
+    return prisma.user.findFirst({ where: condition, select });
   },
   findMany: (prisma: PrismaClient, condition: Prisma.UserWhereInput, selection: Prisma.UserSelectScalar): Promise<User> => {
     return prisma.user.findMany({
