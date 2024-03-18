@@ -11,6 +11,54 @@ test("User routes", async (t) => {
 
   const userQueriesStub = Sinon.stub(userQueries);
 
+  await t.test("GET /users/:id", async (t) => {
+    await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
+      const response = await app.inject({
+        method: "GET",
+        url: "/users/1",
+      });
+
+      assert.equal(response.statusCode, StatusCodes.UNAUTHORIZED);
+    });
+
+    await t.test("Should throw not found if user is not found", async (t) => {
+      userQueriesStub.findFirst.resolves(null);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/users/1",
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.NOT_FOUND);
+      assert.deepEqual(response.json().message, "User not found.");
+    });
+
+    await t.test("Should return user details", async (t) => {
+      userQueriesStub.findFirst.resolves({
+        id: 1,
+        firstName: "John",
+        lastName: "Doe",
+      });
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/users/1",
+        headers: {
+          authorization: `Bearer ${loginToken}`,
+        },
+      });
+
+      assert.equal(response.statusCode, StatusCodes.OK);
+      assert.deepEqual(response.json(), {
+        id: 1,
+        fullName: "John Doe",
+      });
+    });
+  });
+
   await t.test("GET /users/me", async (t) => {
     await t.test("Should throw unauthorized if request is not authenticated", async (t) => {
       const response = await app.inject({

@@ -20,6 +20,10 @@ export function createUnauthorizedResponse(message: string, fieldErrors: FieldEr
   return createErrorResponse(StatusCodes.UNAUTHORIZED, message, fieldErrors);
 }
 
+export function createNotFoundResponse(message: string, fieldErrors: FieldError[] = []) {
+  return createErrorResponse(StatusCodes.NOT_FOUND, message, fieldErrors);
+}
+
 export function createForbiddenResponse(message: string, fieldErrors: FieldError[] = []) {
   return createErrorResponse(StatusCodes.FORBIDDEN, message, fieldErrors);
 }
