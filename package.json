@@ -48,7 +48,7 @@
     "@types/ejs": "^3.1.5",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/lodash": "^4.17.0",
-    "@types/node": "^20.11.29",
+    "@types/node": "^20.11.30",
     "@types/sinon": "^17.0.3",
     "@types/tap": "^15.0.5",
     "c8": "^9.1.0",
