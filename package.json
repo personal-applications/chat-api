@@ -50,7 +50,7 @@
     "@types/lodash": "^4.17.7",
     "@types/node": "^22.5.0",
     "@types/sinon": "^17.0.3",
-    "@types/tap": "^15.0.5",
+    "@types/tap": "^15.0.12",
     "c8": "^10.1.2",
     "concurrently": "^8.2.2",
     "fastify-tsconfig": "^2.0.0",
