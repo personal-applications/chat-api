@@ -54,7 +54,7 @@
     "c8": "^10.1.2",
     "concurrently": "^9.1.0",
     "fastify-tsconfig": "^2.0.0",
-    "nodemon": "^3.1.4",
+    "nodemon": "^3.1.7",
     "prettier": "^3.4.1",
     "prisma": "^5.22.0",
     "sinon": "^19.0.2",
