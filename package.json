@@ -29,7 +29,7 @@
     "@fastify/swagger-ui": "^5.2.2",
     "@fastify/type-provider-json-schema-to-ts": "^5.0.0",
     "@joggr/fastify-prisma": "^4.0.0",
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "^6.5.0",
     "ajv-errors": "^3.0.0",
     "bcrypt": "^5.1.1",
     "copyfiles": "^2.4.1",
