@@ -26,7 +26,7 @@
     "@fastify/jwt": "^10.0.0",
     "@fastify/sensible": "^6.0.4",
     "@fastify/swagger": "^9.6.1",
-    "@fastify/swagger-ui": "^5.2.4",
+    "@fastify/swagger-ui": "^5.2.5",
     "@fastify/type-provider-json-schema-to-ts": "^5.0.0",
     "@joggr/fastify-prisma": "^7.0.0",
     "@prisma/client": "^7.3.0",
