@@ -27,7 +27,7 @@
     "@fastify/sensible": "^6.0.6",
     "@fastify/swagger": "^9.9.1",
     "@fastify/swagger-ui": "^6.1.1",
-    "@fastify/type-provider-json-schema-to-ts": "^5.0.0",
+    "@fastify/type-provider-json-schema-to-ts": "^5.0.1",
     "@joggr/fastify-prisma": "^7.0.1",
     "@prisma/client": "^7.10.0",
     "ajv-errors": "^3.0.0",
